@@ -1,0 +1,67 @@
+<% content_for :title, "Your OTP Code" %>
+
+<h1 style="
+  margin: 0 0 20px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #111827;
+  text-align: center;
+">
+    Your Verification Code
+</h1>
+
+<p style="
+  margin: 0 0 24px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #374151;
+  text-align: center;
+">
+    Hello <%= @user.first_name || @user.email %>,<br />
+    Use the code below to verify your account.
+</p>
+
+<!-- OTP Box -->
+<div style="text-align: center; margin: 32px 0">
+    <table cellpadding="0" cellspacing="0" border="0" style="
+      display: inline-block;
+      border: 2px dashed #e74f1c;
+      background-color: #fefaf5;
+      padding: 10px 16px;
+    ">
+        <tr>
+            <td style="
+        font-size: 16px;
+        font-weight: bold;
+        letter-spacing: 10px;
+        color: #e74f1c;
+        text-align: center;
+      ">
+                <%= @otp_code %>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<p style="
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+  line-height: 1.5;
+">
+    This code will expire in <strong><%= @otp_expires_in %></strong>.<br />
+    Please do not share it with anyone.
+</p>
+
+<p style="
+  margin: 32px 0 0;
+  font-size: 13px;
+  color: #9ca3af;
+  text-align: center;
+  line-height: 1.5;
+">
+    If you didn't request this code, you can safely ignore this
+    email.<br />
+    Someone may have entered your email by mistake.
+</p>

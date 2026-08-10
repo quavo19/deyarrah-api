@@ -1,0 +1,9 @@
+Your OTP Code
+
+Hello <%= @user.first_name || @user.email %>,
+
+Your One-Time Password (OTP) code is: <%= @otp_code %>
+
+This code will expire in <%= @otp_expires_in %>.
+
+If you didn't request this code, please ignore this email.

@@ -1,0 +1,34 @@
+New Booking Assigned to You
+
+Hello <%= @user.first_name || @user.email %>,
+
+A new booking has been assigned to you for processing.
+
+Booking Details:
+- Booking ID: #<%= @booking.id.to_s.first(8) %>
+- Customer: <%= @booking.user.first_name || @booking.user.email %>
+- Product: <%= @booking.product_name || @product&.name || "N/A" %>
+- Period: <%= @booking.start_at.strftime("%B %d, %Y") %> - <%= @booking.end_at.strftime("%B %d, %Y") %>
+- Total: <%= number_to_currency(@booking.total_price) %>
+
+Items in this booking:
+<% @booking_items.each do |item| %>
+- <%= item.variant_stock_option_names || "Item" %>
+  Quantity: <%= item.quantity %>
+  Price: <%= number_to_currency(item.price) %>
+  <% if item.variant_stock_warehouse_name %>Warehouse: <%= item.variant_stock_warehouse_name %><% end %>
+<% end %>
+
+Fulfillments:
+<% @fulfillments.each do |fulfillment| %>
+- Warehouse: <%= fulfillment.warehouse&.name || "N/A" %>
+  Status: <%= fulfillment.status.humanize %>
+  <% if fulfillment.delivery_date %>Delivery Date: <%= fulfillment.delivery_date.strftime("%B %d, %Y") %><% end %>
+<% end %>
+
+Please review this booking and update its status as you process it.
+
+View booking: <%= @booking_url %>
+
+Best regards,
+The Platinum Vault Team

@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+
+# Load Rails environment first
+require_relative "../config/environment"
+
+# Start Sidekiq worker
+require "sidekiq/cli"
+
+# Sidekiq CLI expects ARGV to be parsed, so we need to handle it properly
+# The simplest approach is to use bundle exec sidekiq which handles everything
+if ARGV.empty?
+  exec("bundle", "exec", "sidekiq")
+else
+  exec("bundle", "exec", "sidekiq", *ARGV)
+end

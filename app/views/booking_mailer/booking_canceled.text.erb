@@ -1,0 +1,26 @@
+Booking Canceled
+
+Hello <%= @user.first_name || @user.email %>,
+
+We're sorry to inform you that your booking has been canceled.
+
+Booking Details:
+- Booking ID: #<%= @booking.id.to_s.first(8) %>
+- Product: <%= @booking.product_name || @product&.name || "N/A" %>
+- Period: <%= @booking.start_at.strftime("%B %d, %Y") %> - <%= @booking.end_at.strftime("%B %d, %Y") %>
+- Total: <%= number_to_currency(@booking.total_price) %>
+
+Items in this booking:
+<% @booking_items.each do |item| %>
+- <%= item.variant_stock_option_names || "Item" %>
+  Quantity: <%= item.quantity %>
+  Price: <%= number_to_currency(item.price) %>
+  <% if item.variant_stock_warehouse_name %>Warehouse: <%= item.variant_stock_warehouse_name %><% end %>
+<% end %>
+
+If you have any questions about this cancellation, please contact our support team.
+
+View your booking: <%= @booking_url %>
+
+Best regards,
+The Platinum Vault Team

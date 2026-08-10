@@ -1,0 +1,148 @@
+<% content_for :title, "Booking Confirmed" %>
+
+<h1 style="
+  margin: 0 0 20px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #111827;
+  text-align: center;
+">
+    Booking Confirmed
+</h1>
+
+<p style="
+  margin: 0 0 24px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #374151;
+  text-align: center;
+">
+    <% if @user == @booking.user %>
+    Great news! Your booking has been confirmed.
+    <% else %>
+    A booking has been confirmed for <%= @booking.user.first_name || @booking.user.email %>.
+    <% end %>
+</p>
+
+<!-- Booking Details -->
+<div style="
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 24px 0;
+">
+    <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #111827;">
+        Booking ID #<%= @booking.id.to_s.first(8) %>
+    </p>
+    <p style="margin: 0 0 8px; font-size: 14px; color: #6b7280;">
+        <% if @user == @booking.user %>
+        Your booking for <%= @booking.product_name || @product&.name || "N/A" %>
+        <% else %>
+        Booking for <%= @booking.user.first_name || @booking.user.email %>
+        <% end %>
+    </p>
+    <p style="margin: 0 0 8px; font-size: 14px; color: #6b7280;">
+        Period <%= @booking.start_at.strftime("%B %d, %Y") %> - <%= @booking.end_at.strftime("%B %d, %Y") %>
+    </p>
+    <% if @warehouse %>
+    <p style="margin: 4px 0 0; font-size: 14px; color: #6b7280;">
+        <%= @warehouse.name %> Warehouse
+    </p>
+    <% end %>
+</div>
+
+<!-- Products Section -->
+<% items_to_show = @fulfillment ? @booking_items : @booking.booking_items.includes(:variant_stock) %>
+<% if items_to_show.any? %>
+<h2 style="
+    margin: 32px 0 16px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+  ">
+    Confirmed Items:
+</h2>
+
+<% items_to_show.each do |item| %>
+<div style="
+      background-color: #ffffff;
+      margin: 12px 0;
+      display: flex;
+      gap: 16px;
+    ">
+    <% 
+        image_url = nil
+        if item.variant_stock
+          options = item.variant_stock.variant_options.includes(:images)
+          option_with_image = options.find { |opt| opt.images.any? }
+          image_url = option_with_image&.images&.order(created_at: :desc)&.first&.url if option_with_image
+        end
+        image_url ||= @product&.images&.order(created_at: :desc)&.first&.url
+      %>
+
+    <% if image_url %>
+    <img src="<%= image_url %>" alt="Product" style="
+          width: 80px;
+          height: 80px;
+          object-fit: cover;
+          border-radius: 6px;
+          flex-shrink: 0;
+        " />
+    <% end %>
+
+    <div style="flex: 1;">
+        <p style="margin: 0 0 4px; font-size: 14px; color: #6b7280;">
+            Product <%= @booking.product_name || @product&.name || "N/A" %>
+        </p>
+        <p style="margin: 0 0 4px; font-size: 15px; font-weight: 600; color: #111827;">
+            <%= item.variant_stock_option_names || "Item" %>
+        </p>
+        <p style="margin: 0 0 4px; font-size: 14px; color: #6b7280;">
+            Quantity: <%= item.quantity %>
+        </p>
+        <% if item.variant_stock_warehouse_name %>
+        <p style="margin: 4px 0 0; font-size: 13px; color: #9ca3af;">
+            Warehouse: <%= item.variant_stock_warehouse_name %>
+        </p>
+        <% end %>
+    </div>
+</div>
+<% end %>
+<% end %>
+
+<div style="text-align: center; margin: 32px 0">
+    <a href="<%= @booking_url %>" style="
+    display: inline-block;
+    background-color: #e74f1c;
+    color: #ffffff;
+    padding: 12px 32px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+  ">View Booking</a>
+</div>
+
+<p style="
+  margin: 32px 0 0;
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+  line-height: 1.5;
+">
+    <% if @user == @booking.user %>
+    We're preparing your items and will notify you once they're ready for dispatch.
+    <% else %>
+    The booking is ready for processing.
+    <% end %>
+</p>
+
+<p style="
+  margin: 32px 0 0;
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+  line-height: 1.5;
+">
+    Best regards,<br />
+    The Platinum Vault Team
+</p>
