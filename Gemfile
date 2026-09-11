@@ -17,6 +17,7 @@ gem "tzinfo-data", platforms: %i[ windows jruby ]
 gem "rack-cors"
 gem "devise"
 gem "devise-jwt"
+gem "omniauth-google-oauth2"
 gem "jwt"
 gem "jsonapi-serializer"
 gem "pundit"

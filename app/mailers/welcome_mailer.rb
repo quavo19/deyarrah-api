@@ -3,7 +3,7 @@ class WelcomeMailer < ApplicationMailer
     @user = user
     mail(
       to: @user.email,
-      subject: "Welcome to Platinum Vault!"
+      subject: "Welcome to Kara Bloome!"
     )
   end
 end

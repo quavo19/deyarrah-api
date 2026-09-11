@@ -34,7 +34,7 @@ module PlatinumVaultApi
 
     # Add session middleware for Sidekiq web UI
     config.middleware.use ActionDispatch::Cookies
-    config.middleware.use ActionDispatch::Session::CookieStore, key: "_platinum_vault_session"
+    config.middleware.use ActionDispatch::Session::CookieStore, key: "_deyarrah_session"
 
     config.generators do |g|
       g.orm :active_record, primary_key_type: :uuid

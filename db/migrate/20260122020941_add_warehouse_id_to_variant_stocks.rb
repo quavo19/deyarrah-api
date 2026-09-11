@@ -6,7 +6,7 @@ class AddWarehouseIdToVariantStocks < ActiveRecord::Migration[8.0]
     # Step 2: Handle existing variant_stocks without warehouse_id
     # Delete dependent records first to avoid foreign key violations
     execute <<-SQL
-      DELETE FROM booking_items 
+      DELETE FROM order_items 
       WHERE variant_stock_id IN (SELECT id FROM variant_stocks WHERE warehouse_id IS NULL);
     SQL
     

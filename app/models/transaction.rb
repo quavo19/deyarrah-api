@@ -6,7 +6,7 @@ class Transaction < ApplicationRecord
     failed: "failed"
   }
 
-  belongs_to :booking
+  belongs_to :order
 
   validates :amount_kobo, presence: true
   validates :currency, presence: true

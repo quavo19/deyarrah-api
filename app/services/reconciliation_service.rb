@@ -24,9 +24,9 @@ class ReconciliationService
   private
 
   def calculate_reserved_quantity(variant_stock)
-    Booking.active
-      .joins(:booking_items)
-      .where(booking_items: { variant_stock_id: variant_stock.id })
-      .sum("booking_items.quantity")
+    Order.active
+      .joins(:order_items)
+      .where(order_items: { variant_stock_id: variant_stock.id })
+      .sum("order_items.quantity")
   end
 end

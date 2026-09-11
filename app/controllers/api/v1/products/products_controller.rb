@@ -9,7 +9,11 @@ module Api
           authorize Product
           @products = policy_scope(Product).includes(
             :category,
+            :categories,
             :images,
+            :cart_items,
+            :wishlist_items,
+            { sub_categories: :category },
             variant_types: { variant_options: :images }
           ).order(created_at: :desc)
 
@@ -21,7 +25,18 @@ module Api
             )
           end
 
-          @products = @products.where(category_id: params[:category_id]) if params[:category_id].present?
+          if params[:category_id].present?
+            @products = @products.left_joins(:product_categories).where(
+              "products.category_id = :category_id OR product_categories.category_id = :category_id",
+              category_id: params[:category_id]
+            ).distinct
+          end
+
+          if params[:sub_category_id].present?
+            @products = @products.joins(:product_sub_categories).where(
+              product_sub_categories: { sub_category_id: params[:sub_category_id] }
+            ).distinct
+          end
 
           if params[:active].present?
             active_value = ActiveModel::Type::Boolean.new.cast(params[:active])
@@ -38,23 +53,7 @@ module Api
               {
                 id: product.id,
                 type: "product",
-                attributes: {
-                  name: product.name,
-                  description: product.description,
-                  bookable_type: product.bookable_type,
-                  active: product.active,
-                  status: product.status,
-                  category_id: product.category_id,
-                  delivery_rate_per_km: product.delivery_rate_per_km.to_f,
-                  category: product.category ? {
-                    id: product.category.id,
-                    name: product.category.name
-                  } : nil,
-                  total_stock: calculate_total_stock(product),
-                  images: format_product_images(product),
-                  created_at: product.created_at.iso8601,
-                  updated_at: product.updated_at.iso8601
-                }
+                attributes: product_attributes(product).merge(total_stock: calculate_total_stock(product))
               }
             end,
             meta: {
@@ -70,30 +69,23 @@ module Api
           authorize @product
           @product = Product.includes(
             :category,
+            :categories,
             :images,
-            variant_types: { variant_options: :images }
+            :cart_items,
+            :wishlist_items,
+            { reviews: :user },
+            { sub_categories: :category },
+            { variant_types: { variant_options: :images } }
           ).find(@product.id)
 
           render json: {
             data: {
               id: @product.id,
               type: "product",
-              attributes: {
-                name: @product.name,
-                description: @product.description,
-                bookable_type: @product.bookable_type,
-                active: @product.active,
-                status: @product.status,
-                category_id: @product.category_id,
-                delivery_rate_per_km: @product.delivery_rate_per_km.to_f,
-                category: @product.category ? {
-                  id: @product.category.id,
-                  name: @product.category.name
-                } : nil,
-                images: format_product_images(@product),
-                created_at: @product.created_at.iso8601,
-                updated_at: @product.updated_at.iso8601
-              }
+              attributes: product_attributes(@product).merge(
+                reviews: format_reviews(@product),
+                review_summary: review_summary(@product)
+              )
             }
           }, status: :ok
         end
@@ -104,11 +96,16 @@ module Api
           @product = Product.new(product_params)
 
           if @product.save
+            sync_product_taxonomy(@product)
             authorize @product
             @product.reload
             @product = Product.includes(
               :category,
+              :categories,
               :images,
+              :cart_items,
+              :wishlist_items,
+              { sub_categories: :category },
               variant_types: { variant_options: :images }
             ).find(@product.id)
 
@@ -116,21 +113,7 @@ module Api
               data: {
                 id: @product.id,
                 type: "product",
-                  attributes: {
-                  name: @product.name,
-                  description: @product.description,
-                  bookable_type: @product.bookable_type,
-                  active: @product.active,
-                  category_id: @product.category_id,
-                  delivery_rate_per_km: @product.delivery_rate_per_km.to_f,
-                  category: @product.category ? {
-                    id: @product.category.id,
-                    name: @product.category.name
-                  } : nil,
-                  images: format_product_images(@product),
-                  created_at: @product.created_at.iso8601,
-                  updated_at: @product.updated_at.iso8601
-                }
+                  attributes: product_attributes(@product)
               }
             }, status: :created
           else
@@ -145,10 +128,15 @@ module Api
           authorize @product
 
           if @product.update(product_params)
+            sync_product_taxonomy(@product)
             @product.reload
             @product = Product.includes(
               :category,
+              :categories,
               :images,
+              :cart_items,
+              :wishlist_items,
+              { sub_categories: :category },
               variant_types: { variant_options: :images }
             ).find(@product.id)
 
@@ -156,21 +144,7 @@ module Api
               data: {
                 id: @product.id,
                 type: "product",
-                  attributes: {
-                  name: @product.name,
-                  description: @product.description,
-                  bookable_type: @product.bookable_type,
-                  active: @product.active,
-                  category_id: @product.category_id,
-                  delivery_rate_per_km: @product.delivery_rate_per_km.to_f,
-                  category: @product.category ? {
-                    id: @product.category.id,
-                    name: @product.category.name
-                  } : nil,
-                  images: format_product_images(@product),
-                  created_at: @product.created_at.iso8601,
-                  updated_at: @product.updated_at.iso8601
-                }
+                  attributes: product_attributes(@product)
               }
             }, status: :ok
           else
@@ -187,25 +161,15 @@ module Api
           # Load images before destroying
           @product = Product.includes(
             :category,
+            :categories,
             :images,
+            :cart_items,
+            :wishlist_items,
+            { sub_categories: :category },
             variant_types: { variant_options: :images }
           ).find(@product.id)
 
-          product_data = {
-            id: @product.id,
-            name: @product.name,
-            description: @product.description,
-            bookable_type: @product.bookable_type,
-            active: @product.active,
-            category_id: @product.category_id,
-            category: @product.category ? {
-              id: @product.category.id,
-              name: @product.category.name
-            } : nil,
-            images: format_product_images(@product),
-            created_at: @product.created_at.iso8601,
-            updated_at: @product.updated_at.iso8601
-          }
+          product_data = product_attributes(@product).merge(id: @product.id)
 
           if @product.destroy
             render json: {
@@ -233,7 +197,79 @@ module Api
         end
 
         def product_params
-          params.require(:product).permit(:name, :description, :bookable_type, :active, :category_id, :delivery_rate_per_km)
+          params.require(:product).permit(:name, :description, :bookable_type, :active, :category_id, :delivery_rate_per_km, :bonus_points)
+        end
+
+        def requested_category_ids
+          ids = Array(params.dig(:product, :category_ids)).reject(&:blank?)
+          ids << params.dig(:product, :category_id) if params.dig(:product, :category_id).present?
+          ids.uniq
+        end
+
+        def requested_sub_category_ids
+          Array(params.dig(:product, :sub_category_ids)).reject(&:blank?).uniq
+        end
+
+        def sync_product_taxonomy(product)
+          category_ids = requested_category_ids
+          sub_category_ids = requested_sub_category_ids
+
+          product.category_ids = category_ids if params.dig(:product, :category_ids).present? || params.dig(:product, :category_id).present?
+          product.sub_category_ids = sub_category_ids if params.dig(:product, :sub_category_ids).present?
+          product.update_column(:category_id, category_ids.first) if category_ids.any? && product.category_id != category_ids.first
+        end
+
+        def product_attributes(product)
+          categories = product.categories.sort_by(&:name)
+          sub_categories = product.sub_categories.sort_by(&:name)
+
+          {
+            name: product.name,
+            description: product.description,
+            bookable_type: product.bookable_type,
+            active: product.active,
+            status: product.status,
+            bonus_points: product.bonus_points,
+            category_id: product.category_id || categories.first&.id,
+            category_ids: categories.map(&:id),
+            sub_category_ids: sub_categories.map(&:id),
+            delivery_rate_per_km: product.delivery_rate_per_km.to_f,
+            category: product.category ? {
+              id: product.category.id,
+              name: product.category.name
+            } : categories.first && {
+              id: categories.first.id,
+              name: categories.first.name
+            },
+            categories: categories.map { |category| category_json(category) },
+            sub_categories: sub_categories.map { |sub_category| sub_category_json(sub_category) },
+            images: format_product_images(product),
+            cart_count: product.cart_items.size,
+            wishlist_count: product.wishlist_items.size,
+            created_at: product.created_at.iso8601,
+            updated_at: product.updated_at.iso8601
+          }
+        end
+
+        def category_json(category)
+          {
+            id: category.id,
+            name: category.name,
+            description: category.description
+          }
+        end
+
+        def sub_category_json(sub_category)
+          {
+            id: sub_category.id,
+            category_id: sub_category.category_id,
+            name: sub_category.name,
+            description: sub_category.description,
+            category: {
+              id: sub_category.category.id,
+              name: sub_category.category.name
+            }
+          }
         end
 
         def calculate_total_stock(product)
@@ -275,6 +311,38 @@ module Api
 
           # Combine all images: product images first, then variant option images
           product_images + variant_option_images
+        end
+
+        def format_reviews(product)
+          product.reviews.sort_by(&:created_at).reverse.map do |review|
+            {
+              id: review.id,
+              product_id: review.product_id,
+              user_id: review.user_id,
+              points: review.points,
+              comment: review.comment,
+              user: {
+                id: review.user.id,
+                email: review.user.email,
+                first_name: review.user.first_name,
+                last_name: review.user.last_name,
+                avatar: review.user.avatar
+              },
+              created_at: review.created_at.iso8601,
+              updated_at: review.updated_at.iso8601
+            }
+          end
+        end
+
+        def review_summary(product)
+          reviews = product.reviews
+          count = reviews.size
+          average = count.positive? ? (reviews.sum(&:points).to_f / count).round(2) : 0.0
+
+          {
+            average_points: average,
+            total_reviews: count
+          }
         end
       end
     end

@@ -1,0 +1,25 @@
+Order Canceled
+
+Hello <%= @user.first_name || @user.email %>,
+
+We're sorry to inform you that your order has been canceled.
+
+Order Details:
+- Order ID: #<%= @order.id.to_s.first(8) %>
+- Product: <%= @product&.name || "N/A" %>
+- Total: <%= number_to_currency(@order.total_price) %>
+
+Items in this order:
+<% @order_items.each do |item| %>
+- <%= item.variant_stock_option_names || "Item" %>
+  Quantity: <%= item.quantity %>
+  Price: <%= number_to_currency(item.price) %>
+  <% if item.variant_stock_warehouse_name %>Warehouse: <%= item.variant_stock_warehouse_name %><% end %>
+<% end %>
+
+If you have any questions about this cancellation, please contact our support team.
+
+View your order: <%= @order_url %>
+
+Best regards,
+The Kara Bloome Team

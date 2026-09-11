@@ -1,6 +1,6 @@
 class DowntimeService
   class DowntimeConflictError < StandardError; end
-  class BookingConflictError < StandardError; end
+  class OrderConflictError < StandardError; end
   class ValidationError < StandardError; end
 
   def initialize(downtime = nil)
@@ -10,7 +10,6 @@ class DowntimeService
   def create(variant_stock, start_at, end_at, reason = nil)
     validate_time_range(start_at, end_at)
     check_overlapping_downtimes(variant_stock, start_at, end_at)
-    check_conflicting_bookings(variant_stock, start_at, end_at)
 
     downtime = nil
     ActiveRecord::Base.transaction do
@@ -52,7 +51,6 @@ class DowntimeService
 
     validate_time_range(new_start_at, new_end_at)
     check_overlapping_downtimes(@downtime.variant_stock, new_start_at, new_end_at, exclude_id: @downtime.id)
-    check_conflicting_bookings(@downtime.variant_stock, new_start_at, new_end_at)
 
     was_active = @downtime.active?
     old_start_at = @downtime.start_at
@@ -146,17 +144,6 @@ class DowntimeService
 
     if overlapping.exists?
       raise DowntimeConflictError, "Overlapping downtime already exists for this variant_stock"
-    end
-  end
-
-  def check_conflicting_bookings(variant_stock, start_at, end_at)
-    conflicting_bookings = Booking.confirmed
-      .joins(:booking_items)
-      .where(booking_items: { variant_stock_id: variant_stock.id })
-      .overlapping(start_at, end_at)
-
-    if conflicting_bookings.exists?
-      raise BookingConflictError, "Cannot create downtime: conflicting confirmed bookings exist"
     end
   end
 

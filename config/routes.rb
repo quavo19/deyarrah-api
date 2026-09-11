@@ -11,7 +11,8 @@ Rails.application.routes.draw do
       controllers: {
         sessions: "api/v1/auth/sessions",
         registrations: "api/v1/auth/registrations",
-        passwords: "api/v1/auth/passwords"
+        passwords: "api/v1/auth/passwords",
+        omniauth_callbacks: "api/v1/auth/omniauth_callbacks"
       }
 
       # User management routes
@@ -28,8 +29,16 @@ Rails.application.routes.draw do
       # Admin routes
       resources :roles, only: [ :index, :update ]
       resources :permissions, only: [ :index ]
-      resources :categories, only: [ :index, :create, :destroy ]
+      resources :categories, only: [ :index, :show, :create, :update, :destroy ]
+      resources :sub_categories, only: [ :index, :show, :create, :update, :destroy ]
       resources :contacts, only: [ :index, :create, :destroy ], controller: "contacts"
+      resources :support_requests, only: [ :index, :show, :create, :update, :destroy ]
+      resources :badges, only: [ :index, :show, :create, :update, :destroy ] do
+        member do
+          post "users/:user_id", to: "badges#add_user", as: :add_user
+          delete "users/:user_id", to: "badges#remove_user", as: :remove_user
+        end
+      end
 
       # User management (admin only)
       resources :users, only: [ :index, :show ], controller: "users/users" do
@@ -51,6 +60,7 @@ Rails.application.routes.draw do
 
       namespace :products do
         resources :products, only: [ :index, :show, :create, :update, :destroy ] do
+          resources :reviews, only: [ :index, :create, :destroy ], controller: "reviews"
           resources :product_meta, only: [ :index, :create, :update, :destroy ], controller: "product_meta"
           resources :variants, only: [ :index, :create ], controller: "variants"
           resources :images, only: [ :index, :create, :destroy ], controller: "products/images", path_names: { images: "images" }
@@ -77,7 +87,7 @@ Rails.application.routes.draw do
         end
       end
 
-      resources :bookings, only: [ :index, :create, :show, :update, :destroy ], controller: "bookings/bookings" do
+      resources :orders, only: [ :index, :create, :show, :update, :destroy ], controller: "orders/orders" do
         member do
           post :cancel
         end
@@ -89,22 +99,30 @@ Rails.application.routes.draw do
 
       # Customer routes
       namespace :customer do
-        resources :products, only: [ :index, :show ], controller: "products/products"
+        resources :products, only: [ :index, :show ], controller: "products/products" do
+          resources :reviews, only: [ :index, :create ], controller: "products/reviews"
+        end
+        resources :cart_items, path: "cart", only: [ :index, :create, :update, :destroy ]
+        resources :wishlist_items, path: "wishlist", only: [ :index, :create, :destroy ]
         resources :addresses, only: [ :index, :show, :create, :update, :destroy ], controller: "addresses/addresses" do
           member do
             post :set_default
           end
         end
         resources :warehouses, only: [ :index ], controller: "warehouses/warehouses"
-        namespace :bookings do
-          resources :bookings, only: [ :index, :show ], controller: "bookings"
+        scope module: "orders", path: "orders" do
+          resources :orders, only: [ :index, :show, :create ], controller: "orders" do
+            member do
+              post :mark_received
+            end
+          end
         end
       end
 
-      # Customer admin / staff booking management routes
+      # Customer admin / staff order management routes
       namespace :customer_admin do
-        namespace :bookings do
-          resources :bookings, only: [ :index, :show, :update ], controller: "bookings" do
+        scope module: "orders", path: "orders" do
+          resources :orders, only: [ :index, :show, :update ], controller: "orders" do
             collection do
               get :assigned
             end

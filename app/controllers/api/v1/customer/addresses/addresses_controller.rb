@@ -16,8 +16,8 @@ module Api
                   type: "customer_address",
                   attributes: {
                     name: address.name,
-                    latitude: address.latitude.to_f,
-                    longitude: address.longitude.to_f,
+                    latitude: address.latitude&.to_f,
+                    longitude: address.longitude&.to_f,
                     country: address.country,
                     region: address.region,
                     city: address.city,
@@ -55,6 +55,14 @@ module Api
           end
 
           def create
+            if current_user.customer_addresses.count >= 3
+              render json: {
+                error: "Address limit reached",
+                errors: [ "You can save up to 3 addresses" ]
+              }, status: :unprocessable_entity
+              return
+            end
+
             @address = current_user.customer_addresses.build(address_params)
 
             if @address.save
@@ -69,8 +77,8 @@ module Api
                   type: "customer_address",
                   attributes: {
                     name: @address.name,
-                    latitude: @address.latitude.to_f,
-                    longitude: @address.longitude.to_f,
+                    latitude: @address.latitude&.to_f,
+                    longitude: @address.longitude&.to_f,
                     country: @address.country,
                     region: @address.region,
                     city: @address.city,
@@ -103,8 +111,8 @@ module Api
                   type: "customer_address",
                   attributes: {
                     name: @address.name,
-                    latitude: @address.latitude.to_f,
-                    longitude: @address.longitude.to_f,
+                    latitude: @address.latitude&.to_f,
+                    longitude: @address.longitude&.to_f,
                     country: @address.country,
                     region: @address.region,
                     city: @address.city,
@@ -143,8 +151,8 @@ module Api
                 type: "customer_address",
                 attributes: {
                   name: @address.name,
-                  latitude: @address.latitude.to_f,
-                  longitude: @address.longitude.to_f,
+                    latitude: @address.latitude&.to_f,
+                    longitude: @address.longitude&.to_f,
                   country: @address.country,
                   region: @address.region,
                   city: @address.city,
@@ -168,7 +176,7 @@ module Api
           end
 
           def address_params
-            params.require(:address).permit(:name, :latitude, :longitude, :is_default)
+            params.require(:address).permit(:name, :latitude, :longitude, :country, :region, :city, :county, :is_default, address: {})
           end
         end
       end

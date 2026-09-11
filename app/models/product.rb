@@ -3,18 +3,27 @@ class Product < ApplicationRecord
   enum :status, { available: "available", partial: "partial" }
 
   belongs_to :category, optional: true
+  has_many :product_categories, dependent: :destroy
+  has_many :categories, through: :product_categories
+  has_many :product_sub_categories, dependent: :destroy
+  has_many :sub_categories, through: :product_sub_categories
   has_many :product_meta, class_name: "ProductMeta", dependent: :destroy
   has_many :variant_types, dependent: :destroy
   has_many :variant_options, through: :variant_types
   has_many :variant_stocks, dependent: :destroy
   has_many :images, as: :owner, dependent: :destroy
-  has_many :bookings, dependent: :nullify
+  has_many :reviews, dependent: :destroy
+  has_many :cart_items, dependent: :destroy
+  has_many :cart_users, through: :cart_items, source: :user
+  has_many :wishlist_items, dependent: :destroy
+  has_many :wishlist_users, through: :wishlist_items, source: :user
 
   before_destroy :destroy_related_variant_stocks
   after_save :update_status_if_needed
 
   validates :name, presence: true
   validates :bookable_type, presence: true
+  validates :bonus_points, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 
   def calculate_status
     has_active_downtime = variant_stocks.any? do |variant_stock|
@@ -59,9 +68,9 @@ class Product < ApplicationRecord
       end.each(&:delete)
     end
 
-    # Nullify booking_items instead of destroying them to preserve booking data
+    # Nullify order_items instead of destroying them to preserve order data
     variant_stocks.each do |variant_stock|
-      variant_stock.booking_items.update_all(variant_stock_id: nil)
+      variant_stock.order_items.update_all(variant_stock_id: nil)
     end
 
     variant_stocks.destroy_all

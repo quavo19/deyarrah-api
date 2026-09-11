@@ -1,18 +1,22 @@
+configured_origins = [
+  ENV["FRONTEND_URL"],
+  ENV["CUSTOMER_FRONTEND_URL"],
+  ENV["API_BASE_URL"],
+  *ENV.fetch("CORS_ORIGINS", "").split(",")
+].compact.map(&:strip).reject(&:blank?)
+
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
-    origins "https://platinumvaultltd.com", # later change to the domain of the frontend app
-            "platinumvaultltd.com",
-            "https://api.platinumvaultltd.com",
-            "api.platinumvaultltd.com",
-            "https://cms.platinumvaultltd.com",
-            "cms.platinumvaultltd.com",
-            "http://localhost:3002",
-            "localhost:3002",
-            "http://localhost:5173",
-            "localhost:5173",
-            "localhost:3001",
-            "www.platinumvaultltd.com",
-            "https://www.platinumvaultltd.com"
+    origins(*[
+      "http://localhost:3002",
+      "localhost:3002",
+      "http://localhost:5173",
+      "localhost:5173",
+      "http://localhost:5174",
+      "localhost:5174",
+      "localhost:3001",
+      *configured_origins
+    ].uniq)
 
     resource "*",
              headers: :any,

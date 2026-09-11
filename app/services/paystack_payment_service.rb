@@ -3,13 +3,13 @@ class PaystackPaymentService
 
   PAYSTACK_BASE_URL = "https://api.paystack.co".freeze
 
-  def self.initialize_transaction(booking)
+  def self.initialize_transaction(order, callback_url: nil)
     raise PaystackError, "PAYSTACK_SECRET_KEY is not configured" if paystack_secret_key.blank?
 
-    amount_kobo = (booking.total_price.to_f * 100).to_i
+    amount_kobo = (order.total_price.to_f * 100).to_i
     raise PaystackError, "Amount must be greater than zero" if amount_kobo <= 0
 
-    transaction = booking.transactions.create!(
+    transaction = order.transactions.create!(
       amount_kobo: amount_kobo,
       currency: "GHS",
       status: "initialized",
@@ -18,10 +18,10 @@ class PaystackPaymentService
     )
 
     payload = {
-      email: booking.user.email,
+      email: order.user.email,
       amount: amount_kobo,
       reference: transaction.provider_reference,
-      callback_url: ENV["PAYSTACK_CALLBACK_URL"]
+      callback_url: callback_url.presence || ENV["PAYSTACK_CALLBACK_URL"]
     }.compact
 
     response_body = post("/transaction/initialize", payload)
@@ -73,9 +73,10 @@ class PaystackPaymentService
         metadata: (transaction.metadata || {}).merge("verification" => data)
       )
       
-      # Mark booking as paid when payment is successful
-      booking = transaction.booking
-      booking.update!(payment_status: :completed) unless booking.payment_status_completed?
+      # Mark order as paid when payment is successful
+      order = transaction.order
+      order.update!(payment_status: :completed) unless order.payment_status_completed?
+      order.award_product_bonus_points!
     when "failed"
       transaction.update!(
         status: "failed",
@@ -138,4 +139,3 @@ class PaystackPaymentService
     raise PaystackError, "Error calling Paystack: #{e.message}"
   end
 end
-

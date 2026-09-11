@@ -125,7 +125,7 @@ module Api
           render json: { error: e.message }, status: :unprocessable_entity
         rescue DowntimeService::DowntimeConflictError => e
           render json: { error: e.message }, status: :conflict
-        rescue DowntimeService::BookingConflictError => e
+        rescue DowntimeService::OrderConflictError => e
           render json: { error: e.message }, status: :conflict
         rescue ActiveRecord::RecordNotFound => e
           render json: { error: "Variant stock not found" }, status: :not_found
@@ -184,7 +184,7 @@ module Api
           render json: { error: e.message }, status: :unprocessable_entity
         rescue DowntimeService::DowntimeConflictError => e
           render json: { error: e.message }, status: :conflict
-        rescue DowntimeService::BookingConflictError => e
+        rescue DowntimeService::OrderConflictError => e
           render json: { error: e.message }, status: :conflict
         rescue ArgumentError => e
           render json: { error: "Invalid date format" }, status: :unprocessable_entity

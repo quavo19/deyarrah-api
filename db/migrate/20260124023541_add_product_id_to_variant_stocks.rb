@@ -20,14 +20,14 @@ class AddProductIdToVariantStocks < ActiveRecord::Migration[8.0]
         AND product_id IS NULL;
     SQL
 
-    # For unit products: get product from bookings
+    # For unit products: get product from orders
     execute <<-SQL
       UPDATE variant_stocks
       SET product_id = (
-        SELECT DISTINCT bookings.product_id
-        FROM booking_items
-        INNER JOIN bookings ON bookings.id = booking_items.booking_id
-        WHERE booking_items.variant_stock_id = variant_stocks.id
+        SELECT DISTINCT orders.product_id
+        FROM order_items
+        INNER JOIN orders ON orders.id = order_items.order_id
+        WHERE order_items.variant_stock_id = variant_stocks.id
         LIMIT 1
       )
       WHERE (cardinality(option_ids) = 0 OR option_ids = '{}'::uuid[])

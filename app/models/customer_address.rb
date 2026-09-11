@@ -1,10 +1,10 @@
 class CustomerAddress < ApplicationRecord
   belongs_to :user
-  has_many :bookings, dependent: :nullify
+  has_many :orders, dependent: :nullify
 
   validates :name, presence: true
-  validates :latitude, presence: true, inclusion: { in: -90.0..90.0 }
-  validates :longitude, presence: true, inclusion: { in: -180.0..180.0 }
+  validates :latitude, inclusion: { in: -90.0..90.0 }, allow_nil: true
+  validates :longitude, inclusion: { in: -180.0..180.0 }, allow_nil: true
 
   scope :default, -> { where(is_default: true) }
   scope :by_user, ->(user) { where(user: user) }

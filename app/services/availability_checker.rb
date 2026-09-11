@@ -3,7 +3,7 @@ class AvailabilityChecker
   class DowntimeConflictError < StandardError; end
   class RedisUnavailableError < StandardError; end
 
-  def initialize(variant_stock, start_at, end_at)
+  def initialize(variant_stock, start_at = nil, end_at = nil)
     @variant_stock = variant_stock
     @start_at = start_at
     @end_at = end_at
@@ -28,11 +28,11 @@ class AvailabilityChecker
     end
 
     overlapping_downtimes = @variant_stock.downtimes
-      .where("start_at < ? AND end_at > ?", @end_at, @start_at)
+      .where("start_at <= ? AND end_at > ?", Time.current, Time.current)
       .where(ended_at: nil)
 
     if overlapping_downtimes.exists?
-      raise DowntimeConflictError, "Variant stock #{@variant_stock.id} has overlapping downtime"
+      raise DowntimeConflictError, "Variant stock #{@variant_stock.id} is currently in downtime"
     end
   end
 

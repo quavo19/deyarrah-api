@@ -1,0 +1,32 @@
+Order Received
+
+<% if @user == @order.user %>
+Hello <%= @user.first_name || @user.email %>,
+
+Your order has been received and is ready for use!
+<% else %>
+A order has been received by the customer.
+<% end %>
+
+Order Details:
+- Order ID: #<%= @order.id.to_s.first(8) %>
+- Product: <%= @product&.name || "N/A" %>
+<% if @warehouse %>- Warehouse: <%= @warehouse.name %><% end %>
+
+Received Items:
+<% items_to_show = @fulfillment ? @order_items : @order.order_items.includes(variant_stock: { variant_options: :images }) %>
+<% items_to_show.each do |item| %>
+- <%= item.variant_stock_option_names || "Item" %>
+  Quantity: <%= item.quantity %>
+  <% if item.variant_stock_warehouse_name %>Warehouse: <%= item.variant_stock_warehouse_name %><% end %>
+<% end %>
+
+<% if @user == @order.user %>
+<% else %>
+The customer has received the items and the order is now active.
+<% end %>
+
+View your order: <%= @order_url %>
+
+Best regards,
+The Kara Bloome Team

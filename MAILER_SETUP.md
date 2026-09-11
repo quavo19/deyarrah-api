@@ -46,10 +46,10 @@ The email will automatically open in your browser!
    smtp:
      user_name: your_smtp_username
      password: your_smtp_password
-     address: smtp.example.com
+     address: smtp.local
      port: 587
      authentication: plain
-     domain: yourdomain.com
+     domain: yourdomain.local
    ```
 
 3. **Update production environment** (`config/environments/production.rb`):
@@ -71,10 +71,10 @@ The email will automatically open in your browser!
 
 ```yaml
 smtp:
-  address: smtp.gmail.com
+  address: smtp.gmail.local
   port: 587
   authentication: plain
-  domain: gmail.com
+  domain: gmail.local
 ```
 
 #### SendGrid
@@ -84,7 +84,7 @@ smtp:
   address: smtp.sendgrid.net
   port: 587
   authentication: plain
-  domain: yourdomain.com
+  domain: yourdomain.local
 ```
 
 #### Mailgun
@@ -94,7 +94,7 @@ smtp:
   address: smtp.mailgun.org
   port: 587
   authentication: plain
-  domain: yourdomain.com
+  domain: yourdomain.local
 ```
 
 ## Mailer Configuration
@@ -106,13 +106,13 @@ Located at: `app/mailers/application_mailer.rb`
 Default sender email is configured via environment variable:
 
 ```ruby
-default from: ENV.fetch("MAILER_FROM", "noreply@platinumvaultltd.com")
+default from: ENV.fetch("MAILER_FROM", "noreply@localhost")
 ```
 
 Set in your environment:
 
 ```bash
-export MAILER_FROM="noreply@yourdomain.com"
+export MAILER_FROM="noreply@localhost"
 ```
 
 ### Creating New Mailers
@@ -179,14 +179,13 @@ OtpMailer.send_otp(user, otp_code).deliver_now
 
 ```bash
 # Development (optional)
-MAILER_FROM=noreply@platinumvaultltd.com
+MAILER_FROM=noreply@localhost
 
 # Production (required)
-MAILER_FROM=noreply@yourdomain.com
+MAILER_FROM=noreply@localhost
 SMTP_USER_NAME=your_smtp_username
 SMTP_PASSWORD=your_smtp_password
-SMTP_ADDRESS=smtp.example.com
+SMTP_ADDRESS=smtp.local
 SMTP_PORT=587
-SMTP_DOMAIN=yourdomain.com
+SMTP_DOMAIN=yourdomain.local
 ```
-

@@ -1,0 +1,33 @@
+New Order Assigned to You
+
+Hello <%= @user.first_name || @user.email %>,
+
+A new order has been assigned to you for processing.
+
+Order Details:
+- Order ID: #<%= @order.id.to_s.first(8) %>
+- Customer: <%= @order.user.first_name || @order.user.email %>
+- Product: <%= @product&.name || "N/A" %>
+- Total: <%= number_to_currency(@order.total_price) %>
+
+Items in this order:
+<% @order_items.each do |item| %>
+- <%= item.variant_stock_option_names || "Item" %>
+  Quantity: <%= item.quantity %>
+  Price: <%= number_to_currency(item.price) %>
+  <% if item.variant_stock_warehouse_name %>Warehouse: <%= item.variant_stock_warehouse_name %><% end %>
+<% end %>
+
+Fulfillments:
+<% @fulfillments.each do |fulfillment| %>
+- Warehouse: <%= fulfillment.warehouse&.name || "N/A" %>
+  Status: <%= fulfillment.status.humanize %>
+  <% if fulfillment.delivery_date %>Delivery Date: <%= fulfillment.delivery_date.strftime("%B %d, %Y") %><% end %>
+<% end %>
+
+Please review this order and update its status as you process it.
+
+View order: <%= @order_url %>
+
+Best regards,
+The Kara Bloome Team

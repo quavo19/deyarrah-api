@@ -1,6 +1,6 @@
 class TimeBasedAvailabilityChecker
   class TimeRangeInvalidError < StandardError; end
-  class BookingOverlapError < StandardError; end
+  class OrderOverlapError < StandardError; end
   class DowntimeConflictError < StandardError; end
 
   def initialize(product, variant_stock, start_at, end_at, requested_quantity)
@@ -12,17 +12,7 @@ class TimeBasedAvailabilityChecker
   end
 
   def validate_time_range
-    if @start_at.blank? || @end_at.blank?
-      raise TimeRangeInvalidError, "start_at and end_at are required"
-    end
-
-    if @end_at <= @start_at
-      raise TimeRangeInvalidError, "end_at must be after start_at"
-    end
-
-    if @start_at < Time.current
-      raise TimeRangeInvalidError, "start_at cannot be in the past"
-    end
+    true
   end
 
   def check_downtime_overlap
@@ -30,12 +20,12 @@ class TimeBasedAvailabilityChecker
       raise DowntimeConflictError, "Variant stock #{@variant_stock.id} is in downtime"
     end
 
-    overlapping_downtimes = @variant_stock.downtimes
-      .where("start_at < ? AND end_at > ?", @end_at, @start_at)
+    active_downtimes = @variant_stock.downtimes
+      .where("start_at <= ? AND end_at > ?", Time.current, Time.current)
       .where(ended_at: nil)
 
-    if overlapping_downtimes.exists?
-      raise DowntimeConflictError, "Variant stock #{@variant_stock.id} has overlapping downtime in time range"
+    if active_downtimes.exists?
+      raise DowntimeConflictError, "Variant stock #{@variant_stock.id} is currently in downtime"
     end
   end
 
@@ -46,21 +36,11 @@ class TimeBasedAvailabilityChecker
       total_quantity = @variant_stock.quantity
     end
 
-    overlapping_bookings = Booking.active
-      .joins(:booking_items)
-      .where(booking_items: { variant_stock_id: @variant_stock.id })
-      .overlapping(@start_at, @end_at)
-
-    reserved_quantity = overlapping_bookings
-      .joins(:booking_items)
-      .where(booking_items: { variant_stock_id: @variant_stock.id })
-      .sum("booking_items.quantity")
-
-    available_quantity = total_quantity - reserved_quantity
+    available_quantity = AvailabilityStore.get_available_quantity(@variant_stock.id) || total_quantity
 
     if available_quantity < @requested_quantity
       variant_name = get_variant_stock_name(@variant_stock)
-      raise BookingOverlapError, "Insufficient availability for #{variant_name}. Only #{available_quantity} available, but #{@requested_quantity} requested."
+      raise OrderOverlapError, "Insufficient availability for #{variant_name}. Only #{available_quantity} available, but #{@requested_quantity} requested."
     end
 
     available_quantity
@@ -73,23 +53,14 @@ class TimeBasedAvailabilityChecker
       total_quantity = @variant_stock.quantity
     end
 
-    overlapping_bookings = Booking.active
-      .joins(:booking_items)
-      .where(booking_items: { variant_stock_id: @variant_stock.id })
-      .overlapping(@start_at, @end_at)
+    available_quantity = AvailabilityStore.get_available_quantity(@variant_stock.id) || total_quantity
 
-    reserved_quantity = overlapping_bookings
-      .joins(:booking_items)
-      .where(booking_items: { variant_stock_id: @variant_stock.id })
-      .sum("booking_items.quantity")
-
-    if reserved_quantity + @requested_quantity > total_quantity
+    if available_quantity < @requested_quantity
       variant_name = get_variant_stock_name(@variant_stock)
-      available_quantity = total_quantity - reserved_quantity
-      raise BookingOverlapError, "Capacity exceeded for #{variant_name}. Only #{available_quantity} available, but #{@requested_quantity} requested."
+      raise OrderOverlapError, "Capacity exceeded for #{variant_name}. Only #{available_quantity} available, but #{@requested_quantity} requested."
     end
 
-    total_quantity - reserved_quantity
+    available_quantity
   end
 
   def validate_availability

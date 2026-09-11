@@ -8,13 +8,13 @@
     border-top: 1px dashed #d1d5db;
   ">
         <p style="margin: 0 0 8px">
-            © <%= Time.now.year %> Platinum Vault
+            © <%= Time.now.year %> Kara Bloome
         </p>
         <p style="margin: 0 0 4px; font-size: 13px">
-            <a href="https://contact.platinumvaultltd.com" style="color: #e74f1c; text-decoration: none">contact.platinumvaultltd.com</a>
+            <span style="color: #e74f1c">Contact support</span>
         </p>
         <p style="margin: 0; font-size: 13px">
-            <a href="mailto:info@platinumvaultltd.com" style="color: #e74f1c; text-decoration: none">info@platinumvaultltd.com</a>
+            <span style="color: #e74f1c"><%= ENV.fetch("SUPPORT_EMAIL", "support@localhost") %></span>
         </p>
         <p style="margin: 12px 0 0; font-size: 12px">Accra, Ghana</p>
     </td>

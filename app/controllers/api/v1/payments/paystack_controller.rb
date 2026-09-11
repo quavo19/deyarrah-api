@@ -5,14 +5,14 @@ module Api
         before_action :authenticate_user!, only: [ :initialize_payment, :verify ]
 
         def initialize_payment
-          booking = current_user.bookings.find_by(id: params[:booking_id])
+          order = find_current_user_order(params[:order_id])
 
-          unless booking
-            render json: { error: "Booking not found" }, status: :not_found
+          unless order
+            render json: { error: "Order not found" }, status: :not_found
             return
           end
 
-          result = PaystackPaymentService.initialize_transaction(booking)
+          result = PaystackPaymentService.initialize_transaction(order, callback_url: params[:callback_url])
 
           render json: {
             authorization_url: result[:authorization_url],
@@ -38,21 +38,22 @@ module Api
             return
           end
 
-          booking = transaction.booking
-          unless booking && booking.user_id == current_user.id
+          order = transaction.order
+          unless order && order.user_id == current_user.id
             render json: { error: "Not authorized to verify this transaction" }, status: :forbidden
             return
           end
 
           PaystackPaymentService.verify_transaction(reference)
 
-          booking.reload
+          order.reload
           transaction.reload
 
           render json: {
-            booking_id: booking.id,
-            booking_status: booking.status,
-            payment_status: booking.payment_status,
+            id: order.id,
+            order_id: order.order_id,
+            order_status: order.status,
+            payment_status: order.payment_status,
             transaction_status: transaction.status,
             reference: reference
           }, status: :ok
@@ -71,6 +72,14 @@ module Api
         rescue PaystackPaymentService::PaystackError => e
           Rails.logger.error("Paystack webhook error: #{e.message}")
           head :unprocessable_entity
+        end
+
+        private
+
+        def find_current_user_order(identifier)
+          current_user.orders
+            .where("orders.id::text = :id OR orders.order_id = :order_id", id: identifier, order_id: identifier.to_s.upcase)
+            .first
         end
       end
     end

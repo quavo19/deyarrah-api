@@ -1,7 +1,7 @@
 class CreateFulfillments < ActiveRecord::Migration[8.0]
   def change
     create_table :fulfillments, id: :uuid do |t|
-      t.references :booking, null: false, foreign_key: true, type: :uuid
+      t.references :order, null: false, foreign_key: true, type: :uuid
       t.references :warehouse, null: false, foreign_key: true, type: :uuid
       t.string :status, null: false, default: 'pending'
       t.datetime :delivery_date

@@ -6,7 +6,7 @@ module Api
         before_action :set_user, only: [ :show, :assign_role, :assign_permissions, :unassign_permissions, :block, :unblock ]
 
         def index
-          @users = User.all.includes(:role, :permissions)
+          @users = User.all.includes(:role, :permissions, :bonus, :badges)
 
           if params[:search].present?
             search_term = "%#{params[:search]}%"
@@ -50,6 +50,9 @@ module Api
         end
 
         def show
+          @user.ensure_bonus
+          @user = User.includes(:role, :permissions, :bonus, :customer_addresses, :badges, :user_badges).find(@user.id)
+
           render json: {
             data: UserSerializer.new(@user).serializable_hash[:data][:attributes]
           }, status: :ok

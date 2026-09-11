@@ -23,10 +23,10 @@ class DowntimeEndJob < ApplicationJob
     end
 
     # Reconcile reserved quantity from database after downtime ends
-    db_reserved_quantity = Booking.active
-      .joins(:booking_items)
-      .where(booking_items: { variant_stock_id: variant_stock.id })
-      .sum("booking_items.quantity")
+    db_reserved_quantity = Order.active
+      .joins(:order_items)
+      .where(order_items: { variant_stock_id: variant_stock.id })
+      .sum("order_items.quantity")
 
     AvailabilityStore.toggle_downtime_off(variant_stock.id)
     AvailabilityStore.set_reserved_quantity(variant_stock.id, db_reserved_quantity)

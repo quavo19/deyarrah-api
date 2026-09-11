@@ -5,20 +5,34 @@ class User < ApplicationRecord
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable,
-         :jwt_authenticatable, jwt_revocation_strategy: JwtDenylist
+         :omniauthable, :jwt_authenticatable,
+         omniauth_providers: [ :google_oauth2 ],
+         jwt_revocation_strategy: JwtDenylist
 
   # Associations
   belongs_to :role, optional: true
   has_many :user_permissions, dependent: :destroy
   has_many :permissions, through: :user_permissions
-  has_many :bookings, dependent: :destroy
+  has_many :orders, dependent: :destroy
+  has_many :reviews, dependent: :destroy
   has_many :customer_addresses, dependent: :destroy
+  has_one :bonus, dependent: :destroy
+  has_many :user_badges, dependent: :destroy
+  has_many :badges, through: :user_badges
+  has_many :cart_items, dependent: :destroy
+  has_many :cart_products, through: :cart_items, source: :product
+  has_many :wishlist_items, dependent: :destroy
+  has_many :wishlist_products, through: :wishlist_items, source: :product
+  has_many :support_requests, dependent: :nullify
 
   # Validations
   validate :user_not_blocked, on: :create
+  validate :phone_numbers_limit
+  validate :phone_numbers_are_unique
 
   # Callbacks
   before_create :set_default_role
+  after_create :ensure_bonus
 
   # Override Devise's password reset email to use our custom mailer via background job
   def send_reset_password_instructions(opts = {})
@@ -71,7 +85,48 @@ class User < ApplicationRecord
     role&.name == role_name.to_s
   end
 
+  def ensure_bonus
+    bonus || create_bonus!(balance: 0)
+  end
+
+  def self.from_google_omniauth(auth)
+    email = auth.info.email.to_s.downcase
+    raise ArgumentError, "Google account did not return an email address" if email.blank?
+
+    customer_role = Role.find_by(name: "CUSTOMER")
+    raise ArgumentError, "Customer role is not configured" unless customer_role
+
+    user = find_by(provider: auth.provider, uid: auth.uid) || find_by(email: email)
+    if user&.role&.name.present? && user.role.name != "CUSTOMER"
+      raise ArgumentError, "Staff and admin accounts must sign in with email and password"
+    end
+
+    user ||= new(email: email, password: Devise.friendly_token[0, 32])
+    user.role ||= customer_role
+
+    user.assign_attributes(
+      provider: auth.provider,
+      uid: auth.uid,
+      first_name: user.first_name.presence || auth.info.first_name,
+      last_name: user.last_name.presence || auth.info.last_name,
+      avatar: user.avatar.presence || auth.info.image
+    )
+
+    user.save!
+    user
+  end
+
   private
+
+  def phone_numbers_limit
+    phones = Array(phone_numbers).reject(&:blank?)
+    errors.add(:phone_numbers, "cannot have more than 3 numbers") if phones.size > 3
+  end
+
+  def phone_numbers_are_unique
+    phones = Array(phone_numbers).map { |phone| phone.to_s.gsub(/\s+/, "") }.reject(&:blank?)
+    errors.add(:phone_numbers, "cannot contain duplicates") if phones.uniq.size != phones.size
+  end
 
   def set_default_role
     self.role ||= Role.find_by(id: DEFAULT_ROLE_ID)

@@ -1,4 +1,4 @@
-# Platinum Vault API
+# Kara Bloome API
 
 Rails API application with authentication, authorization, and background job processing.
 
@@ -63,7 +63,7 @@ Rails API application with authentication, authorization, and background job pro
    ```
 
 6. Configure environment variables (if needed):
-   - `MAILER_FROM`: Email address for mailer (defaults to `noreply@platinumvaultltd.com`)
+   - `MAILER_FROM`: Email address for mailer (defaults to `noreply@localhost`)
    - `REDIS_URL`: Redis connection URL (defaults to `redis://localhost:6379/1` - uses database 1 to avoid conflicts with other projects)
    - `SIDEKIQ_USERNAME`: Username for Sidekiq web UI in production (defaults to `admin`)
    - `SIDEKIQ_PASSWORD`: Password for Sidekiq web UI in production (defaults to `change-me` - **change this!**)
@@ -130,11 +130,11 @@ You can monitor jobs by visiting `http://localhost:3000/sidekiq` after starting 
 **Important for Production:** Make sure to set strong `SIDEKIQ_USERNAME` and `SIDEKIQ_PASSWORD` environment variables before deploying to production!
 
 ###Deployed to Production Server
-Platinum Vault Services;
-Platinum Vault API Application
-$ sudo systemctl status platinumvault
-- Platinum Vault Sidekiq Service
-$ sudo systemctl status platinumvault-sidekiq
+Deyarrah Services;
+Deyarrah API Application
+$ sudo systemctl status deyarrah
+- Deyarrah Sidekiq Service
+$ sudo systemctl status deyarrah-sidekiq
 *when updates are made restart the services with;
-sudo systemctl restart platinumvault
-sudo systemctl restart platinumvault-sidekiq
+sudo systemctl restart deyarrah
+sudo systemctl restart deyarrah-sidekiq

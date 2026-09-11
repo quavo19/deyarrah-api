@@ -1,0 +1,34 @@
+Order Completed
+
+<% if @user == @order.user %>
+Hello <%= @user.first_name || @user.email %>,
+
+Your order has been successfully completed. Thank you for using Kara Bloome!
+<% else %>
+A order has been completed.
+<% end %>
+
+Order Details:
+- Order ID: #<%= @order.id.to_s.first(8) %>
+- Product: <%= @product&.name || "N/A" %>
+- Total: <%= number_to_currency(@order.total_price) %>
+
+Completed Items:
+<% items_to_show = @fulfillment ? @order_items : @order.order_items.includes(variant_stock: { variant_options: :images }) %>
+<% items_to_show.each do |item| %>
+- <%= item.variant_stock_option_names || "Item" %>
+  Quantity: <%= item.quantity %>
+  Price: <%= number_to_currency(item.price) %>
+  <% if item.variant_stock_warehouse_name %>Warehouse: <%= item.variant_stock_warehouse_name %><% end %>
+<% end %>
+
+<% if @user == @order.user %>
+We hope you enjoyed your order experience. We'd love to hear your feedback!
+<% else %>
+All items have been returned and processed successfully.
+<% end %>
+
+View your order: <%= @order_url %>
+
+Best regards,
+The Kara Bloome Team

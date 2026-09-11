@@ -1,8 +1,8 @@
 class VariantStock < ApplicationRecord
   belongs_to :warehouse
   belongs_to :product, optional: true
-  has_many :booking_items, dependent: :nullify
-  has_many :bookings, through: :booking_items
+  has_many :order_items, dependent: :nullify
+  has_many :orders, through: :order_items
   has_many :downtimes, dependent: :destroy
 
   validates :quantity, presence: true, numericality: { greater_than_or_equal_to: 0 }
@@ -51,7 +51,7 @@ class VariantStock < ApplicationRecord
     VariantOption.where(id: option_ids).sum(:price)
   end
 
-  # Calculate available quantity considering downtime and active bookings
+  # Calculate available quantity considering downtime and active orders
   # Returns 0 if in downtime, otherwise total - reserved
   # Reconciles Redis with database to handle Redis restarts
   def processed_available_quantity
@@ -70,12 +70,12 @@ class VariantStock < ApplicationRecord
       total_quantity = quantity
     end
 
-    # Calculate actual reserved quantity from active bookings in database
-    # This ensures accuracy even if Redis was restarted
-    db_reserved_quantity = Booking.active
-      .joins(:booking_items)
-      .where(booking_items: { variant_stock_id: id })
-      .sum("booking_items.quantity")
+    # For e-commerce orders, ordered quantities remain committed after
+    # fulfillment/return status changes and are not automatically restocked.
+    db_reserved_quantity = Order
+      .joins(:order_items)
+      .where(order_items: { variant_stock_id: id })
+      .sum("order_items.quantity")
 
     # Reconcile Redis reserved quantity with database
     # If Redis was restarted, it might have incorrect reserved quantity

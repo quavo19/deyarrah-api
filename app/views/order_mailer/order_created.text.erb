@@ -1,0 +1,21 @@
+New Order Created
+
+A new order has been created by <%= @order.user.first_name || @order.user.email %>.
+
+Order Details:
+- Order ID: #<%= @order.id.to_s.first(8) %>
+- Customer: <%= @order.user.first_name || @order.user.email %>
+- Product: <%= @product&.name || "N/A" %>
+
+Items in this order:
+<% @order_items.each do |item| %>
+- Product <%= @product&.name || "N/A" %>
+  <%= item.variant_stock_option_names || "Item" %>
+  Quantity: <%= item.quantity %>
+  <% if item.variant_stock_warehouse_name %>Warehouse: <%= item.variant_stock_warehouse_name %><% end %>
+<% end %>
+
+View order: <%= @order_url %>
+
+Best regards,
+The Kara Bloome Team

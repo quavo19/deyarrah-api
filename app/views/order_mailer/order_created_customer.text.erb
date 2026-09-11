@@ -1,0 +1,22 @@
+Thank You for Your Order!
+
+Your order has been successfully created. We've received your request and will process it shortly.
+
+Order Details:
+- Order ID: #<%= @order.id.to_s.first(8) %>
+- Product: <%= @product&.name || "N/A" %>
+
+Items in your order:
+<% @order_items.each do |item| %>
+- Product <%= @product&.name || "N/A" %>
+  <%= item.variant_stock_option_names || "Item" %>
+  Quantity: <%= item.quantity %>
+  <% if item.variant_stock_warehouse_name %>Warehouse: <%= item.variant_stock_warehouse_name %><% end %>
+<% end %>
+
+View order: <%= @order_url %>
+
+We'll keep you updated on the status of your order.
+
+Best regards,
+The Kara Bloome Team

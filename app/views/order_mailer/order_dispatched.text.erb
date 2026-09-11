@@ -1,0 +1,22 @@
+Order Dispatched
+
+A order has been dispatched and is on its way to the customer.
+
+Order Details:
+- Order ID: #<%= @order.id.to_s.first(8) %>
+- Customer: <%= @order.user.first_name || @order.user.email %>
+- Product: <%= @product&.name || "N/A" %>
+<% if @warehouse %>- Warehouse: <%= @warehouse.name %><% end %>
+
+Dispatched Items:
+<% items_to_show = @fulfillment ? @order_items : @order.order_items.includes(variant_stock: { variant_options: :images }) %>
+<% items_to_show.each do |item| %>
+- <%= item.variant_stock_option_names || "Item" %>
+  Quantity: <%= item.quantity %>
+  <% if item.variant_stock_warehouse_name %>Warehouse: <%= item.variant_stock_warehouse_name %><% end %>
+<% end %>
+
+View order: <%= @order_url %>
+
+Best regards,
+The Kara Bloome Team

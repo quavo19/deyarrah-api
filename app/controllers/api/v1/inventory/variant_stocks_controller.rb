@@ -11,31 +11,10 @@ module Api
 
           if @product
             # Return variant types with options for frontend selection
-            render json: format_product_variants(@product), status: :ok
+            render json: cached_product_variants(@product), status: :ok
           else
             # If no product_id, return variant_stocks as before
-            @variant_stocks = policy_scope(VariantStock).includes(:warehouse)
-            @variant_stocks = @variant_stocks.order(created_at: :desc)
-
-            render json: {
-              data: @variant_stocks.map do |variant_stock|
-                {
-                  id: variant_stock.id,
-                  type: "variant_stock",
-                  attributes: {
-                    warehouse_id: variant_stock.warehouse_id,
-                    warehouse_name: variant_stock.warehouse&.name,
-                    option_ids: variant_stock.option_ids,
-                    options: format_variant_options(variant_stock),
-                    quantity: variant_stock.quantity,
-                    available_quantity: variant_stock.processed_available_quantity,
-                    in_downtime: variant_stock.downtime_active?,
-                    created_at: variant_stock.created_at.iso8601,
-                    updated_at: variant_stock.updated_at.iso8601
-                  }
-                }
-              end
-            }, status: :ok
+            render json: cached_variant_stock_index, status: :ok
           end
         end
 
@@ -208,6 +187,54 @@ module Api
 
         def variant_stock_params
           params.require(:variant_stock).permit(:warehouse_id, :quantity, option_ids: [])
+        end
+
+        def cached_variant_stock_index
+          Rails.cache.fetch(inventory_cache_key("variant_stocks:index"), expires_in: 1.minute) do
+            variant_stocks = policy_scope(VariantStock).includes(:warehouse).order(created_at: :desc)
+
+            {
+              data: variant_stocks.map do |variant_stock|
+                {
+                  id: variant_stock.id,
+                  type: "variant_stock",
+                  attributes: {
+                    warehouse_id: variant_stock.warehouse_id,
+                    warehouse_name: variant_stock.warehouse&.name,
+                    option_ids: variant_stock.option_ids,
+                    options: format_variant_options(variant_stock),
+                    quantity: variant_stock.quantity,
+                    available_quantity: variant_stock.processed_available_quantity,
+                    in_downtime: variant_stock.downtime_active?,
+                    created_at: variant_stock.created_at.iso8601,
+                    updated_at: variant_stock.updated_at.iso8601
+                  }
+                }
+              end
+            }
+          end
+        end
+
+        def cached_product_variants(product)
+          Rails.cache.fetch(inventory_cache_key("variant_stocks:product:#{product.id}"), expires_in: 1.minute) do
+            format_product_variants(product)
+          end
+        end
+
+        def inventory_cache_key(prefix)
+          [
+            prefix,
+            "user:#{current_user.id}",
+            "role:#{current_user.role_id}",
+            "stocks:#{VariantStock.count}:#{cache_timestamp(VariantStock.maximum(:updated_at))}",
+            "variant_types:#{VariantType.count}:#{cache_timestamp(VariantType.maximum(:updated_at))}",
+            "variant_options:#{VariantOption.count}:#{cache_timestamp(VariantOption.maximum(:updated_at))}",
+            "images:#{Image.count}:#{cache_timestamp(Image.maximum(:updated_at))}"
+          ].join("/")
+        end
+
+        def cache_timestamp(value)
+          value&.to_i || 0
         end
 
         def format_variant_options(variant_stock)
