@@ -10,7 +10,7 @@ FactoryBot.define do
     blocked { false }
 
     role do
-      Role.find_by(name: "USER") || create(:role, name: "USER")
+      Role.find_by(name: "CUSTOMER") || create(:role, :customer)
     end
 
     trait :with_otp do
@@ -25,6 +25,12 @@ FactoryBot.define do
     trait :admin do
       role do
         Role.find_by(name: "ADMIN") || create(:role, :admin)
+      end
+    end
+
+    trait :affiliate do
+      role do
+        Role.find_by(name: "AFFILIATE") || create(:role, :affiliate)
       end
     end
 

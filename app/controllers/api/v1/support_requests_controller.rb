@@ -24,7 +24,7 @@ module Api
         end
 
         page = params[:page] || 1
-        per_page = params[:per_page] || 25
+        per_page = pagination_per_page
         requests = requests.page(page).per(per_page)
 
         render json: {
@@ -158,6 +158,12 @@ module Api
 
       def status_params
         params.require(:support_request).permit(:status)
+      end
+
+      def pagination_per_page
+        requested = params[:per_page].to_i
+        requested = 25 if requested <= 0
+        [ requested, 100 ].min
       end
     end
   end

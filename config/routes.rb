@@ -29,8 +29,24 @@ Rails.application.routes.draw do
       # Admin routes
       resources :roles, only: [ :index, :update ]
       resources :permissions, only: [ :index ]
+      post "uploads/presign", to: "uploads#presign"
+      post "uploads/confirm", to: "uploads#confirm"
+      delete "uploads", to: "uploads#destroy"
+      resource :affiliate_profile, only: [ :show, :create, :update ]
+      resources :affiliates, only: [ :index, :show, :update ] do
+        member do
+          post :approve
+          post :reject
+          post :suspend
+          post :reactivate
+        end
+      end
       resources :categories, only: [ :index, :show, :create, :update, :destroy ]
       resources :sub_categories, only: [ :index, :show, :create, :update, :destroy ]
+      resources :delivery_zones, only: [ :index, :show, :create, :update, :destroy ]
+      resources :delivery_weight_tiers, only: [ :index, :show, :create, :update, :destroy ]
+      resources :delivery_high_value_rates, only: [ :index, :show, :create, :update, :destroy ]
+      resource :delivery_settings, only: [ :show, :update ]
       resources :contacts, only: [ :index, :create, :destroy ], controller: "contacts"
       resources :support_requests, only: [ :index, :show, :create, :update, :destroy ]
       resources :badges, only: [ :index, :show, :create, :update, :destroy ] do

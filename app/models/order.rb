@@ -26,6 +26,7 @@ class Order < ApplicationRecord
   has_many :transactions, dependent: :destroy
   has_many :fulfillments, dependent: :destroy
   has_many :warehouses, through: :fulfillments
+  has_many :affiliate_earnings, dependent: :restrict_with_error
 
   validates :status, presence: true
   validates :payment_status, presence: true

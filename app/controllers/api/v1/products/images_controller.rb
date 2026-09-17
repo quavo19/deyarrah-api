@@ -23,6 +23,7 @@ module Api
                   owner_type: image.owner_type,
                   owner_id: image.owner_id,
                   url: image.url,
+                  storage_key: image.storage_key,
                   created_at: image.created_at.iso8601,
                   updated_at: image.updated_at.iso8601
                 }
@@ -49,6 +50,7 @@ module Api
                   owner_type: @image.owner_type,
                   owner_id: @image.owner_id,
                   url: @image.url,
+                  storage_key: @image.storage_key,
                   created_at: @image.created_at.iso8601,
                   updated_at: @image.updated_at.iso8601
                 }
@@ -74,6 +76,7 @@ module Api
                   owner_type: @image.owner_type,
                   owner_id: @image.owner_id,
                   url: @image.url,
+                  storage_key: @image.storage_key,
                   created_at: @image.created_at.iso8601,
                   updated_at: @image.updated_at.iso8601
                 }
@@ -99,6 +102,7 @@ module Api
                   owner_type: @image.owner_type,
                   owner_id: @image.owner_id,
                   url: @image.url,
+                  storage_key: @image.storage_key,
                   created_at: @image.created_at.iso8601,
                   updated_at: @image.updated_at.iso8601
                 }
@@ -161,7 +165,7 @@ module Api
         end
 
         def image_params
-          params.require(:image).permit(:owner_type, :owner_id, :url)
+          params.require(:image).permit(:owner_type, :owner_id, :url, :storage_key)
         end
       end
     end

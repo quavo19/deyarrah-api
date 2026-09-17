@@ -33,7 +33,7 @@ module Api
         private
 
         def profile_params
-          permitted = params.require(:user).permit(:first_name, :last_name, :avatar, :email, phone_numbers: [])
+          permitted = params.require(:user).permit(:first_name, :last_name, :avatar, :avatar_storage_key, :email, phone_numbers: [])
           if permitted[:phone_numbers].present?
             permitted[:phone_numbers] = permitted[:phone_numbers].map(&:to_s).map(&:strip).reject(&:blank?).first(3)
           end

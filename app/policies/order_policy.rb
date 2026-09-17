@@ -29,7 +29,7 @@ class OrderPolicy < ApplicationPolicy
         scope.all
       elsif user&.role&.name == "STAFF"
         scope.all
-      elsif user&.role&.name == "CUSTOMER"
+      elsif user&.role&.name == "CUSTOMER" || user&.role&.name == "AFFILIATE"
         scope.where(user_id: user.id)
       else
         scope.none

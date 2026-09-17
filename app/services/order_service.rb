@@ -127,6 +127,10 @@ class OrderService
       Rails.logger.error("OrderService validation error: #{e.message}")
       Rails.logger.error(e.backtrace.join("\n")) if e.backtrace
       raise ValidationError, e.message
+    rescue DeliveryFeeCalculator::DeliveryUnavailableError => e
+      release_locks
+      rollback_redis_reservations
+      raise ValidationError, e.message
     rescue StandardError => e
       release_locks
       rollback_redis_reservations
@@ -431,45 +435,24 @@ class OrderService
     # Calculate item subtotal (sum of all order item prices)
     item_subtotal = order.order_items.sum { |item| item.price }
 
-    # Calculate delivery fees and distance for each fulfillment
+    # Calculate configured delivery fees for each fulfillment.
     total_delivery_fee = 0.0
     total_delivery_distance = 0.0
 
-    # Get delivery address from stored fields
-    if order.delivery_latitude.present? && order.delivery_longitude.present?
+    if order.customer_address.present?
       order.fulfillments.each do |fulfillment|
-        # Use stored warehouse coordinates
-        unless fulfillment.warehouse_latitude.present? && fulfillment.warehouse_longitude.present?
-          raise ValidationError, "Warehouse coordinates not stored for fulfillment #{fulfillment.id}"
-        end
-
-        # Validate warehouse is in Ghana (still need to fetch warehouse for country check)
         warehouse = fulfillment.warehouse
         unless warehouse&.country == "Ghana"
           raise ValidationError, "We do not deliver outside Ghana"
         end
 
-        # Calculate distance using stored coordinates
-        distance = DistanceCalculator.calculate_distance(
-          fulfillment.warehouse_latitude,
-          fulfillment.warehouse_longitude,
-          order.delivery_latitude,
-          order.delivery_longitude
-        )
+        delivery_fee = DeliveryFeeCalculator.new(fulfillment).calculate
 
-        delivery_rate = delivery_rate_for_fulfillment(fulfillment)
-        delivery_fee = DistanceCalculator.calculate_delivery_fee(
-          distance,
-          delivery_rate
-        )
-
-        # Update fulfillment with calculated values
         fulfillment.update!(
           delivery_fee: delivery_fee
         )
 
         total_delivery_fee += delivery_fee
-        total_delivery_distance += distance
       end
     end
 
@@ -502,9 +485,7 @@ class OrderService
     end
   end
 
-  def delivery_rate_for_fulfillment(fulfillment)
-    fulfillment.order_items
-      .filter_map { |item| item.variant_stock&.product&.delivery_rate_per_km }
-      .first || 10.0
+  def delivery_rate_for_fulfillment(_fulfillment)
+    10.0
   end
 end

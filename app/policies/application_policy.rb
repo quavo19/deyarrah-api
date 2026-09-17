@@ -68,6 +68,10 @@ class ApplicationPolicy
   end
 
   def customer?
-    user&.role&.name == "CUSTOMER"
+    %w[CUSTOMER AFFILIATE].include?(user&.role&.name)
+  end
+
+  def affiliate?
+    user&.role&.name == "AFFILIATE"
   end
 end

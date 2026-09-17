@@ -32,6 +32,7 @@ gem "redis", ">= 4.0.1"
 gem "geocoder"
 gem "rgeo"
 gem "rgeo-activerecord"
+gem "aws-sdk-s3"
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false

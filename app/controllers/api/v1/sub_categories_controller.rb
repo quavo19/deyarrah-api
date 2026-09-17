@@ -66,7 +66,7 @@ module Api
       end
 
       def sub_category_params
-        params.require(:sub_category).permit(:category_id, :name, :description)
+        params.require(:sub_category).permit(:category_id, :name, :description, :image_url, :image_storage_key)
       end
 
       def sub_category_json(sub_category)
@@ -75,6 +75,8 @@ module Api
           category_id: sub_category.category_id,
           name: sub_category.name,
           description: sub_category.description,
+          image_url: sub_category.image_url,
+          image_storage_key: sub_category.image_storage_key,
           category: {
             id: sub_category.category.id,
             name: sub_category.category.name

@@ -18,11 +18,7 @@ module Api
           ).order(created_at: :desc)
 
           if params[:search].present?
-            search_term = "%#{params[:search]}%"
-            @products = @products.where(
-              "name ILIKE ? OR description ILIKE ?",
-              search_term, search_term
-            )
+            @products = @products.matching_search(params[:search])
           end
 
           if params[:category_id].present?
@@ -197,7 +193,21 @@ module Api
         end
 
         def product_params
-          params.require(:product).permit(:name, :description, :bookable_type, :active, :category_id, :delivery_rate_per_km, :bonus_points)
+          params.require(:product).permit(
+            :name,
+            :description,
+            :bookable_type,
+            :active,
+            :category_id,
+            :delivery_rate_per_km,
+            :bonus_points,
+            :affiliate_commission_amount,
+            :shipping_type,
+            :weight_kg,
+            :weight_class,
+            :shipping_category,
+            search_keywords: []
+          )
         end
 
         def requested_category_ids
@@ -230,6 +240,12 @@ module Api
             active: product.active,
             status: product.status,
             bonus_points: product.bonus_points,
+            affiliate_commission_amount: product.affiliate_commission_amount.to_f,
+            shipping_type: product.shipping_type,
+            weight_kg: product.weight_kg&.to_f,
+            weight_class: product.weight_class,
+            shipping_category: product.shipping_category,
+            search_keywords: product.search_keywords,
             category_id: product.category_id || categories.first&.id,
             category_ids: categories.map(&:id),
             sub_category_ids: sub_categories.map(&:id),
@@ -281,9 +297,10 @@ module Api
           # Get product images
           product_images = product.images.order(created_at: :desc).map do |image|
             {
-              id: image.id,
-              url: image.url,
-              owner_type: "Product",
+                id: image.id,
+                url: image.url,
+                storage_key: image.storage_key,
+                owner_type: "Product",
               owner_id: product.id,
               created_at: image.created_at.iso8601,
               updated_at: image.updated_at.iso8601
@@ -297,6 +314,7 @@ module Api
                 {
                   id: image.id,
                   url: image.url,
+                  storage_key: image.storage_key,
                   owner_type: "VariantOption",
                   owner_id: variant_option.id,
                   variant_option_name: variant_option.name,

@@ -18,8 +18,7 @@ module Api
             ).where(active: true)
 
             if params[:search].present?
-              search_term = "%#{params[:search]}%"
-              @products = @products.where("name ILIKE ?", search_term)
+              @products = @products.matching_search(params[:search])
             end
 
             if params[:category].present?
@@ -70,6 +69,7 @@ module Api
                     status: product.status,
                     base_price: product.base_price.to_f,
                     bonus_points: product.bonus_points,
+                    affiliate_commission_amount: product.affiliate_commission_amount.to_f,
                     default_variant_stock: default_variant_stock_json(product),
                     review_summary: review_summary(product),
                     delivery_rate_per_km: product.delivery_rate_per_km.to_f,
@@ -114,6 +114,7 @@ module Api
                   status: @product.status,
                   base_price: @product.base_price.to_f,
                   bonus_points: @product.bonus_points,
+                  affiliate_commission_amount: @product.affiliate_commission_amount.to_f,
                   default_variant_stock: default_variant_stock_json(@product),
                   variant_stocks: variant_stocks_json(@product),
                   delivery_rate_per_km: @product.delivery_rate_per_km.to_f,
@@ -140,6 +141,7 @@ module Api
               {
                 id: image.id,
                 url: image.url,
+                storage_key: image.storage_key,
                 owner_type: "Product",
                 owner_id: product.id,
                 created_at: image.created_at.iso8601,
@@ -176,7 +178,7 @@ module Api
                   variant_type_name: option.variant_type.name,
                   variant_type_pricing_role: option.variant_type.pricing_role,
                   price: option.price.to_f,
-                  images: option.images.order(created_at: :desc).map { |img| { id: img.id, url: img.url } }
+                  images: option.images.order(created_at: :desc).map { |img| { id: img.id, url: img.url, storage_key: img.storage_key } }
                 }
               end,
               image: image

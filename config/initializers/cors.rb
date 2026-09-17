@@ -14,7 +14,12 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
       "localhost:5173",
       "http://localhost:5174",
       "localhost:5174",
+      "http://localhost:3001",
       "localhost:3001",
+      "http://localhost:3002",
+      "localhost:3002",
+      "http://localhost:3003",
+      "localhost:3003",
       *configured_origins
     ].uniq)
 

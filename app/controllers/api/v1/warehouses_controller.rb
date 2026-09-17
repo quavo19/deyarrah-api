@@ -26,7 +26,7 @@ module Api
       def create
         authorize Warehouse
 
-        @warehouse = Warehouse.new(warehouse_params.except(:latitude, :longitude, :image_url))
+        @warehouse = Warehouse.new(warehouse_params.except(:latitude, :longitude, :image_url, :image_storage_key))
         
         # Set location from latitude/longitude if provided
         if warehouse_params[:latitude].present? && warehouse_params[:longitude].present?
@@ -39,7 +39,7 @@ module Api
         if @warehouse.save
           # Create image if image_url is provided
           if warehouse_params[:image_url].present?
-            @warehouse.images.create(url: warehouse_params[:image_url])
+            @warehouse.images.create(url: warehouse_params[:image_url], storage_key: warehouse_params[:image_storage_key])
           end
 
           # Perform reverse geocoding synchronously after save
@@ -67,7 +67,7 @@ module Api
       def update
         authorize @warehouse
 
-        update_params = warehouse_params.except(:latitude, :longitude, :image_url)
+        update_params = warehouse_params.except(:latitude, :longitude, :image_url, :image_storage_key)
         
         # Track if location is being updated
         location_changed = false
@@ -82,7 +82,7 @@ module Api
         if @warehouse.update(update_params)
           # Create image if image_url is provided
           if warehouse_params[:image_url].present?
-            @warehouse.images.create(url: warehouse_params[:image_url])
+            @warehouse.images.create(url: warehouse_params[:image_url], storage_key: warehouse_params[:image_storage_key])
           end
 
           # Perform reverse geocoding if location changed
@@ -127,7 +127,7 @@ module Api
       end
 
       def warehouse_params
-        params.require(:warehouse).permit(:name, :latitude, :longitude, :image_url, :delivery_rate_per_km)
+        params.require(:warehouse).permit(:name, :latitude, :longitude, :image_url, :image_storage_key, :delivery_rate_per_km)
       end
 
       def warehouse_json(warehouse)
@@ -148,6 +148,7 @@ module Api
               {
                 id: image.id,
                 url: image.url,
+                storage_key: image.storage_key,
                 created_at: image.created_at.iso8601,
                 updated_at: image.updated_at.iso8601
               }

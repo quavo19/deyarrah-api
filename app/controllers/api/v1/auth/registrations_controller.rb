@@ -21,7 +21,7 @@ module Api
         private
 
         def sign_up_params
-          params.require(:user).permit(:email, :password, :password_confirmation, :first_name, :last_name, :avatar, :role_id)
+          params.require(:user).permit(:email, :password, :password_confirmation, :first_name, :last_name, :avatar, :avatar_storage_key, :role_id)
         end
 
         def respond_with(current_user, _opts = {})

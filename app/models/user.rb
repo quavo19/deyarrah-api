@@ -24,6 +24,14 @@ class User < ApplicationRecord
   has_many :wishlist_items, dependent: :destroy
   has_many :wishlist_products, through: :wishlist_items, source: :product
   has_many :support_requests, dependent: :nullify
+  has_one :affiliate_profile, dependent: :destroy
+  has_many :affiliate_clicks, foreign_key: :affiliate_user_id, dependent: :destroy
+  has_many :affiliate_attributions, foreign_key: :affiliate_user_id, dependent: :destroy
+  has_many :affiliate_earnings, foreign_key: :affiliate_user_id, dependent: :destroy
+  has_many :affiliate_withdrawals, foreign_key: :affiliate_user_id, dependent: :destroy
+  has_many :referred_affiliate_clicks, class_name: "AffiliateClick", foreign_key: :buyer_user_id, dependent: :nullify
+  has_many :referred_affiliate_attributions, class_name: "AffiliateAttribution", foreign_key: :buyer_user_id, dependent: :nullify
+  has_many :referred_affiliate_earnings, class_name: "AffiliateEarning", foreign_key: :buyer_user_id, dependent: :nullify
 
   # Validations
   validate :user_not_blocked, on: :create
@@ -33,6 +41,8 @@ class User < ApplicationRecord
   # Callbacks
   before_create :set_default_role
   after_create :ensure_bonus
+  after_destroy_commit :delete_avatar_from_r2
+  after_update_commit :delete_old_avatar_from_r2, if: :saved_change_to_avatar_storage_key?
 
   # Override Devise's password reset email to use our custom mailer via background job
   def send_reset_password_instructions(opts = {})
@@ -85,6 +95,18 @@ class User < ApplicationRecord
     role&.name == role_name.to_s
   end
 
+  def affiliate?
+    has_role?("AFFILIATE")
+  end
+
+  def suspended_affiliate?
+    affiliate_profile&.status == "suspended"
+  end
+
+  def active_affiliate?
+    affiliate? && !suspended_affiliate?
+  end
+
   def ensure_bonus
     bonus || create_bonus!(balance: 0)
   end
@@ -97,7 +119,7 @@ class User < ApplicationRecord
     raise ArgumentError, "Customer role is not configured" unless customer_role
 
     user = find_by(provider: auth.provider, uid: auth.uid) || find_by(email: email)
-    if user&.role&.name.present? && user.role.name != "CUSTOMER"
+    if user&.role&.name.present? && !%w[CUSTOMER AFFILIATE].include?(user.role.name)
       raise ArgumentError, "Staff and admin accounts must sign in with email and password"
     end
 
@@ -136,5 +158,20 @@ class User < ApplicationRecord
     if blocked?
       errors.add(:base, "User account is blocked")
     end
+  end
+
+  def delete_avatar_from_r2
+    R2Storage.delete!(avatar_storage_key)
+  rescue Aws::S3::Errors::ServiceError => e
+    Rails.logger.warn "R2 delete failed for user #{id}: #{e.message}"
+  end
+
+  def delete_old_avatar_from_r2
+    old_key, new_key = saved_change_to_avatar_storage_key
+    return if old_key.blank? || old_key == new_key
+
+    R2Storage.delete!(old_key)
+  rescue Aws::S3::Errors::ServiceError => e
+    Rails.logger.warn "R2 old avatar delete failed for user #{id}: #{e.message}"
   end
 end

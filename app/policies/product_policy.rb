@@ -21,7 +21,7 @@ class ProductPolicy < ApplicationPolicy
 
   class Scope < ApplicationPolicy::Scope
     def resolve
-      if user&.role&.name == "CUSTOMER"
+      if user&.role&.name == "CUSTOMER" || user&.role&.name == "AFFILIATE"
         scope.where(active: true)
       else
         scope.all

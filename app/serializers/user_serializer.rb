@@ -1,7 +1,7 @@
 class UserSerializer
   include JSONAPI::Serializer
 
-  attributes :id, :email, :first_name, :last_name, :avatar, :phone_numbers, :blocked, :otp_enabled, :created_at, :updated_at
+  attributes :id, :email, :first_name, :last_name, :avatar, :avatar_storage_key, :phone_numbers, :blocked, :otp_enabled, :created_at, :updated_at
 
   belongs_to :role, serializer: :role
   has_many :permissions, serializer: :permission
