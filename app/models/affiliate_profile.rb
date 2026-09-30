@@ -14,13 +14,12 @@ class AffiliateProfile < ApplicationRecord
 
   validates :status, presence: true, inclusion: { in: STATUSES }
   validates :affiliate_code, presence: true, uniqueness: true
-  validates :full_name, :email, :phone, :country, :city, :content_niche, :reason, presence: true
+  validates :full_name, :email, :phone, :country, :city, :content_niche, presence: true
   validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }, allow_blank: true
   validates :audience_size, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
   validates :terms_accepted, acceptance: true
   validate :social_links_are_present
   validate :promotion_channels_are_present
-  validate :payout_details_are_present
 
   before_validation :ensure_affiliate_code
 
@@ -60,7 +59,45 @@ class AffiliateProfile < ApplicationRecord
     STATUS_LABELS.fetch(status, status.to_s.humanize)
   end
 
+  def normalized_social_links
+    Array(social_links).map { |link| self.class.normalize_social_link(link) }.reject(&:blank?).uniq
+  end
+
+  def social_link_conflicts
+    links = normalized_social_links
+    return [] if links.empty?
+
+    self.class.includes(:user)
+      .where.not(id: id)
+      .select { |profile| (profile.normalized_social_links & links).any? }
+      .map do |profile|
+        {
+          id: profile.id,
+          status: profile.status,
+          full_name: profile.full_name,
+          email: profile.email,
+          matching_links: profile.normalized_social_links & links
+        }
+      end
+  end
+
+  def social_link_conflicts?
+    social_link_conflicts.any?
+  end
+
+  def self.normalize_social_link(link)
+    link.to_s.strip.downcase
+      .sub(/\Ahttps?:\/\//, "")
+      .sub(/\Awww\./, "")
+      .sub(/\/+\z/, "")
+  end
+
   def approve!(reviewer)
+    if social_link_conflicts?
+      errors.add(:social_links, "are already used by another affiliate application")
+      raise ActiveRecord::RecordInvalid, self
+    end
+
     transaction do
       update!(
         status: "approved",
@@ -127,9 +164,5 @@ class AffiliateProfile < ApplicationRecord
 
   def promotion_channels_are_present
     errors.add(:promotion_channels, "must include at least one channel") if Array(promotion_channels).reject(&:blank?).empty?
-  end
-
-  def payout_details_are_present
-    errors.add(:payout_details, "must be provided") if payout_details.blank? || payout_details == {}
   end
 end
