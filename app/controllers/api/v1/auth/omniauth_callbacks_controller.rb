@@ -38,8 +38,30 @@ module Api
         end
 
         def frontend_callback_url
-          frontend_url = ENV.fetch("CUSTOMER_FRONTEND_URL", ENV.fetch("FRONTEND_URL", "http://localhost:5173")).delete_suffix("/")
+          frontend_url = requested_frontend_origin || ENV.fetch("CUSTOMER_FRONTEND_URL", ENV.fetch("FRONTEND_URL", "http://localhost:3002"))
           "#{frontend_url}/auth/google/callback"
+        end
+
+        def requested_frontend_origin
+          origin = request.env.dig("omniauth.params", "origin").presence
+          return unless origin
+
+          normalized_origin = origin.to_s.delete_suffix("/")
+          normalized_origin if allowed_frontend_origins.include?(normalized_origin)
+        end
+
+        def allowed_frontend_origins
+          @allowed_frontend_origins ||= [
+            ENV["FRONTEND_URL"],
+            ENV["CUSTOMER_FRONTEND_URL"],
+            ENV["AFFILIATE_FRONTEND_URL"],
+            ENV["CMS_FRONTEND_URL"],
+            "http://localhost:3001",
+            "http://localhost:3002",
+            "http://localhost:3003",
+            "http://localhost:5173",
+            "http://localhost:5174"
+          ].compact.map { |url| url.to_s.delete_suffix("/") }.uniq
         end
       end
     end

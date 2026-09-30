@@ -126,6 +126,7 @@ module Api
             order_params_raw = params.require(:order)
             order_params_data = order_params_raw.permit(
               :customer_address_id,
+              :affiliate_visitor_id,
               phones: [],
               order_items: [ :variant_stock_id, :quantity ],
               fulfillments: [ :warehouse_id, order_items: [ :variant_stock_id, :quantity ] ]
@@ -170,6 +171,7 @@ module Api
               address_data,
               (order_params_data[:phones] || [])
             ).create
+            AffiliateCommissionService.claim_visitor_attributions!(order, order_params_data[:affiliate_visitor_id])
 
             render json: { data: order_summary_json(order) }, status: :created
           rescue OrderService::ValidationError,
