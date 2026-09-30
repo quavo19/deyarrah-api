@@ -15,12 +15,8 @@ RSpec.describe "Affiliate profiles", type: :request do
         promotion_channels: [ "Instagram", "TikTok" ],
         audience_size: 2500,
         content_niche: "Plants and lifestyle",
-        reason: "I create plant care content and want to promote the shop.",
-        payout_details: {
-          provider: "mobile_money",
-          account_name: "Ama Mensah",
-          account_number: "+233555000000"
-        },
+        reason: "",
+        payout_details: {},
         terms_accepted: true
       }
     }
