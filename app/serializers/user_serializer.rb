@@ -50,6 +50,17 @@ class UserSerializer
     }
   end
 
+  attribute :affiliate_profile do |user|
+    profile = user.affiliate_profile
+    next nil unless profile
+
+    {
+      id: profile.id,
+      status: profile.status,
+      affiliate_code: profile.affiliate_code
+    }
+  end
+
   attribute :badges do |user|
     user.badges.map do |badge|
       user_badge = user.user_badges.find { |record| record.badge_id == badge.id }
