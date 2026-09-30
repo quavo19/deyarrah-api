@@ -37,6 +37,8 @@ class Order < ApplicationRecord
   before_validation :ensure_order_id, on: :create
   after_create :send_creation_email
   after_update :send_status_emails, if: :saved_change_to_status?
+  after_update :create_affiliate_earnings, if: :saved_change_to_status?
+  after_update :cancel_affiliate_earnings, if: :saved_change_to_status?
   after_update :send_assignment_email, if: :saved_change_to_assigned_to_id?
 
   scope :active, -> { where(status: [ :pending, :confirmed, :dispatched, :received, :returning ]) }
@@ -164,6 +166,18 @@ class Order < ApplicationRecord
         OrderMailer.order_completed(self, fulfillment).deliver_later
       end
     end
+  end
+
+  def create_affiliate_earnings
+    return unless received?
+
+    AffiliateCommissionService.create_for_order!(self)
+  end
+
+  def cancel_affiliate_earnings
+    return unless cancelled? || returning?
+
+    AffiliateCommissionService.cancel_for_order!(self)
   end
 
   def send_assignment_email
