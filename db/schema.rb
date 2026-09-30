@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_11_110000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_22_103000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -59,8 +59,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_11_110000) do
     t.uuid "affiliate_user_id", null: false
     t.uuid "buyer_user_id", null: false
     t.uuid "order_id", null: false
-    t.uuid "order_item_id", null: false
-    t.uuid "product_id", null: false
+    t.uuid "order_item_id"
+    t.uuid "product_id"
     t.uuid "affiliate_attribution_id"
     t.string "status", default: "pending", null: false
     t.decimal "sale_amount", precision: 12, scale: 2, default: "0.0", null: false
@@ -71,11 +71,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_11_110000) do
     t.datetime "withdrawn_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "affiliate_signup_referral_id"
+    t.string "earning_type", default: "product_commission", null: false
     t.index ["affiliate_attribution_id"], name: "index_affiliate_earnings_on_affiliate_attribution_id"
+    t.index ["affiliate_signup_referral_id", "order_id"], name: "idx_affiliate_earnings_unique_signup_order", unique: true, where: "(affiliate_signup_referral_id IS NOT NULL)"
+    t.index ["affiliate_signup_referral_id"], name: "index_affiliate_earnings_on_affiliate_signup_referral_id"
     t.index ["affiliate_user_id", "status"], name: "index_affiliate_earnings_on_affiliate_user_id_and_status"
     t.index ["affiliate_user_id"], name: "index_affiliate_earnings_on_affiliate_user_id"
     t.index ["buyer_user_id"], name: "index_affiliate_earnings_on_buyer_user_id"
     t.index ["earned_at"], name: "index_affiliate_earnings_on_earned_at"
+    t.index ["earning_type"], name: "index_affiliate_earnings_on_earning_type"
     t.index ["order_id"], name: "index_affiliate_earnings_on_order_id"
     t.index ["order_item_id"], name: "index_affiliate_earnings_on_order_item_id", unique: true
     t.index ["product_id"], name: "index_affiliate_earnings_on_product_id"
@@ -110,6 +115,32 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_11_110000) do
     t.index ["status"], name: "index_affiliate_profiles_on_status"
     t.index ["user_id"], name: "index_affiliate_profiles_on_user_id", unique: true
     t.check_constraint "audience_size IS NULL OR audience_size >= 0", name: "affiliate_profiles_audience_size_non_negative"
+  end
+
+  create_table "affiliate_settings", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.decimal "signup_referral_percentage", precision: 5, scale: 2, default: "0.0", null: false
+    t.decimal "signup_referral_cap_amount", precision: 12, scale: 2, default: "0.0", null: false
+    t.boolean "signup_referral_enabled", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.check_constraint "signup_referral_cap_amount >= 0::numeric", name: "affiliate_settings_signup_cap_non_negative"
+    t.check_constraint "signup_referral_percentage >= 0::numeric", name: "affiliate_settings_signup_percentage_non_negative"
+  end
+
+  create_table "affiliate_signup_referrals", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "affiliate_user_id", null: false
+    t.uuid "referred_user_id", null: false
+    t.string "visitor_id"
+    t.datetime "referred_at", null: false
+    t.datetime "converted_at"
+    t.integer "rewarded_orders_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["affiliate_user_id"], name: "index_affiliate_signup_referrals_on_affiliate_user_id"
+    t.index ["converted_at"], name: "index_affiliate_signup_referrals_on_converted_at"
+    t.index ["referred_user_id"], name: "index_affiliate_signup_referrals_on_referred_user_id", unique: true
+    t.index ["visitor_id"], name: "index_affiliate_signup_referrals_on_visitor_id"
+    t.check_constraint "rewarded_orders_count >= 0 AND rewarded_orders_count <= 3", name: "affiliate_signup_referrals_rewarded_orders_count_range"
   end
 
   create_table "affiliate_withdrawals", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -484,7 +515,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_11_110000) do
   end
 
   create_table "transactions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
-    t.uuid "order_id", null: false
+    t.uuid "order_id"
     t.integer "amount_kobo", null: false
     t.string "currency", default: "GHS", null: false
     t.string "status", default: "initialized", null: false
@@ -493,9 +524,23 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_11_110000) do
     t.jsonb "metadata"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "user_id"
+    t.uuid "affiliate_withdrawal_id"
+    t.string "purpose", default: "order_payment", null: false
+    t.string "direction", default: "credit", null: false
+    t.datetime "processed_at"
+    t.index ["affiliate_withdrawal_id"], name: "idx_transactions_unique_affiliate_withdrawal", unique: true, where: "(affiliate_withdrawal_id IS NOT NULL)"
+    t.index ["affiliate_withdrawal_id"], name: "index_transactions_on_affiliate_withdrawal_id"
+    t.index ["direction"], name: "index_transactions_on_direction"
     t.index ["order_id"], name: "index_transactions_on_order_id"
+    t.index ["processed_at"], name: "index_transactions_on_processed_at"
     t.index ["provider_reference"], name: "index_transactions_on_provider_reference", unique: true
+    t.index ["purpose"], name: "index_transactions_on_purpose"
     t.index ["status"], name: "index_transactions_on_status"
+    t.index ["user_id"], name: "index_transactions_on_user_id"
+    t.check_constraint "direction::text = ANY (ARRAY['credit'::character varying, 'debit'::character varying]::text[])", name: "transactions_direction_valid"
+    t.check_constraint "order_id IS NOT NULL OR affiliate_withdrawal_id IS NOT NULL", name: "transactions_reference_present"
+    t.check_constraint "purpose::text = ANY (ARRAY['order_payment'::character varying, 'affiliate_withdrawal_payout'::character varying]::text[])", name: "transactions_purpose_valid"
   end
 
   create_table "user_badges", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -617,6 +662,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_11_110000) do
   add_foreign_key "affiliate_clicks", "users", column: "affiliate_user_id"
   add_foreign_key "affiliate_clicks", "users", column: "buyer_user_id"
   add_foreign_key "affiliate_earnings", "affiliate_attributions"
+  add_foreign_key "affiliate_earnings", "affiliate_signup_referrals"
   add_foreign_key "affiliate_earnings", "order_items"
   add_foreign_key "affiliate_earnings", "orders"
   add_foreign_key "affiliate_earnings", "products"
@@ -624,6 +670,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_11_110000) do
   add_foreign_key "affiliate_earnings", "users", column: "buyer_user_id"
   add_foreign_key "affiliate_profiles", "users"
   add_foreign_key "affiliate_profiles", "users", column: "reviewed_by_id"
+  add_foreign_key "affiliate_signup_referrals", "users", column: "affiliate_user_id"
+  add_foreign_key "affiliate_signup_referrals", "users", column: "referred_user_id"
   add_foreign_key "affiliate_withdrawals", "users", column: "affiliate_user_id"
   add_foreign_key "affiliate_withdrawals", "users", column: "reviewed_by_id"
   add_foreign_key "bonuses", "users"
@@ -651,7 +699,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_11_110000) do
   add_foreign_key "reviews", "users"
   add_foreign_key "sub_categories", "categories"
   add_foreign_key "support_requests", "users"
+  add_foreign_key "transactions", "affiliate_withdrawals"
   add_foreign_key "transactions", "orders"
+  add_foreign_key "transactions", "users"
   add_foreign_key "user_badges", "badges"
   add_foreign_key "user_badges", "users"
   add_foreign_key "user_permissions", "permissions"
