@@ -14,6 +14,7 @@ class User < ApplicationRecord
   has_many :user_permissions, dependent: :destroy
   has_many :permissions, through: :user_permissions
   has_many :orders, dependent: :destroy
+  has_many :transactions, dependent: :nullify
   has_many :reviews, dependent: :destroy
   has_many :customer_addresses, dependent: :destroy
   has_one :bonus, dependent: :destroy
@@ -29,9 +30,11 @@ class User < ApplicationRecord
   has_many :affiliate_attributions, foreign_key: :affiliate_user_id, dependent: :destroy
   has_many :affiliate_earnings, foreign_key: :affiliate_user_id, dependent: :destroy
   has_many :affiliate_withdrawals, foreign_key: :affiliate_user_id, dependent: :destroy
+  has_many :affiliate_signup_referrals, foreign_key: :affiliate_user_id, dependent: :destroy
   has_many :referred_affiliate_clicks, class_name: "AffiliateClick", foreign_key: :buyer_user_id, dependent: :nullify
   has_many :referred_affiliate_attributions, class_name: "AffiliateAttribution", foreign_key: :buyer_user_id, dependent: :nullify
   has_many :referred_affiliate_earnings, class_name: "AffiliateEarning", foreign_key: :buyer_user_id, dependent: :nullify
+  has_one :referred_affiliate_signup_referral, class_name: "AffiliateSignupReferral", foreign_key: :referred_user_id, dependent: :nullify
 
   # Validations
   validate :user_not_blocked, on: :create
@@ -104,7 +107,7 @@ class User < ApplicationRecord
   end
 
   def active_affiliate?
-    affiliate? && !suspended_affiliate?
+    affiliate? && !suspended_affiliate? && !blocked?
   end
 
   def ensure_bonus
