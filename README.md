@@ -65,6 +65,10 @@ Rails API application with authentication, authorization, and background job pro
 6. Configure environment variables (if needed):
    - `MAILER_FROM`: Email address for mailer (defaults to `noreply@localhost`)
    - `REDIS_URL`: Redis connection URL (defaults to `redis://localhost:6379/1` - uses database 1 to avoid conflicts with other projects)
+   - `PAYSTACK_SECRET_KEY`: Secret key for Paystack payment and transfer API calls
+   - `PAYSTACK_GH_MTN_MOMO_CODE`: Paystack transfer recipient bank code for MTN Ghana MoMo
+   - `PAYSTACK_GH_VODAFONE_MOMO_CODE`: Paystack transfer recipient bank code for Telecel/Vodafone Cash
+   - `PAYSTACK_GH_AIRTELTIGO_MOMO_CODE`: Paystack transfer recipient bank code for AT Money
    - `SIDEKIQ_USERNAME`: Username for Sidekiq web UI in production (defaults to `admin`)
    - `SIDEKIQ_PASSWORD`: Password for Sidekiq web UI in production (defaults to `change-me` - **change this!**)
 
