@@ -3,6 +3,10 @@ class AffiliateWithdrawal < ApplicationRecord
 
   belongs_to :affiliate_user, class_name: "User"
   belongs_to :reviewed_by, class_name: "User", optional: true
+  has_one :payout_transaction,
+    class_name: "Transaction",
+    dependent: :nullify,
+    inverse_of: :affiliate_withdrawal
 
   validates :status, presence: true, inclusion: { in: STATUSES }
   validates :amount, numericality: { greater_than: 0 }
