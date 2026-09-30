@@ -43,6 +43,7 @@ class AffiliateProfileSerializer
     payload[:attributes][:user] = user_json(profile.user)
     payload[:attributes][:reviewed_by] = user_json(profile.reviewed_by)
     payload[:attributes][:stats] = stats_json
+    payload[:attributes][:social_link_conflicts] = profile.social_link_conflicts
     payload
   end
 
