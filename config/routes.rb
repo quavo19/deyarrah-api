@@ -33,6 +33,20 @@ Rails.application.routes.draw do
       post "uploads/confirm", to: "uploads#confirm"
       delete "uploads", to: "uploads#destroy"
       resource :affiliate_profile, only: [ :show, :create, :update ]
+      resource :affiliate_dashboard, only: [ :show ], controller: "affiliate_dashboard"
+      resource :affiliate_settings, only: [ :show, :update ]
+      resource :affiliate_payout_settings, only: [ :show, :update ]
+      resources :affiliate_signup_referrals, only: [ :create ]
+      resources :affiliate_withdrawals, only: [ :index, :create ]
+      resources :admin_affiliate_withdrawals, path: "affiliate_withdrawal_requests", only: [ :index ] do
+        member do
+          post :approve
+          post :reject
+          post :pay
+        end
+      end
+      resources :transactions, only: [ :index ]
+      resources :affiliate_clicks, only: [ :create ]
       resources :affiliates, only: [ :index, :show, :update ] do
         member do
           post :approve

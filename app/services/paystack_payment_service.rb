@@ -10,11 +10,14 @@ class PaystackPaymentService
     raise PaystackError, "Amount must be greater than zero" if amount_kobo <= 0
 
     transaction = order.transactions.create!(
+      user: order.user,
       amount_kobo: amount_kobo,
       currency: "GHS",
       status: "initialized",
       provider: "paystack",
-      provider_reference: SecureRandom.uuid
+      provider_reference: SecureRandom.uuid,
+      purpose: "order_payment",
+      direction: "credit"
     )
 
     payload = {
@@ -70,6 +73,7 @@ class PaystackPaymentService
     when "success"
       transaction.update!(
         status: "success",
+        processed_at: Time.current,
         metadata: (transaction.metadata || {}).merge("verification" => data)
       )
       
@@ -80,6 +84,7 @@ class PaystackPaymentService
     when "failed"
       transaction.update!(
         status: "failed",
+        processed_at: Time.current,
         metadata: (transaction.metadata || {}).merge("verification" => data)
       )
     else
