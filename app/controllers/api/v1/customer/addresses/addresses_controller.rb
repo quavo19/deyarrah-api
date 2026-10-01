@@ -10,48 +10,12 @@ module Api
             @addresses = current_user.customer_addresses.order(created_at: :desc)
 
             render json: {
-              data: @addresses.map do |address|
-                {
-                  id: address.id,
-                  type: "customer_address",
-                  attributes: {
-                    name: address.name,
-                    latitude: address.latitude&.to_f,
-                    longitude: address.longitude&.to_f,
-                    country: address.country,
-                    region: address.region,
-                    city: address.city,
-                    county: address.county,
-                    address: address.address,
-                    is_default: address.is_default,
-                    created_at: address.created_at.iso8601,
-                    updated_at: address.updated_at.iso8601
-                  }
-                }
-              end
+              data: @addresses.map { |address| address_json(address) }
             }, status: :ok
           end
 
           def show
-            render json: {
-              data: {
-                id: @address.id,
-                type: "customer_address",
-                attributes: {
-                  name: @address.name,
-                  latitude: @address.latitude.to_f,
-                  longitude: @address.longitude.to_f,
-                  country: @address.country,
-                  region: @address.region,
-                  city: @address.city,
-                  county: @address.county,
-                  address: @address.address,
-                  is_default: @address.is_default,
-                  created_at: @address.created_at.iso8601,
-                  updated_at: @address.updated_at.iso8601
-                }
-              }
-            }, status: :ok
+            render json: { data: address_json(@address) }, status: :ok
           end
 
           def create
@@ -71,25 +35,7 @@ module Api
                 ReverseGeocodingService.new(@address).perform
               end
 
-              render json: {
-                data: {
-                  id: @address.id,
-                  type: "customer_address",
-                  attributes: {
-                    name: @address.name,
-                    latitude: @address.latitude&.to_f,
-                    longitude: @address.longitude&.to_f,
-                    country: @address.country,
-                    region: @address.region,
-                    city: @address.city,
-                    county: @address.county,
-                    address: @address.address,
-                    is_default: @address.is_default,
-                    created_at: @address.created_at.iso8601,
-                    updated_at: @address.updated_at.iso8601
-                  }
-                }
-              }, status: :created
+              render json: { data: address_json(@address) }, status: :created
             else
               render json: {
                 error: "Validation failed",
@@ -105,25 +51,7 @@ module Api
                 ReverseGeocodingService.new(@address).perform
               end
 
-              render json: {
-                data: {
-                  id: @address.id,
-                  type: "customer_address",
-                  attributes: {
-                    name: @address.name,
-                    latitude: @address.latitude&.to_f,
-                    longitude: @address.longitude&.to_f,
-                    country: @address.country,
-                    region: @address.region,
-                    city: @address.city,
-                    county: @address.county,
-                    address: @address.address,
-                    is_default: @address.is_default,
-                    created_at: @address.created_at.iso8601,
-                    updated_at: @address.updated_at.iso8601
-                  }
-                }
-              }, status: :ok
+              render json: { data: address_json(@address) }, status: :ok
             else
               render json: {
                 error: "Validation failed",
@@ -145,25 +73,7 @@ module Api
 
           def set_default
             @address.set_as_default!
-            render json: {
-              data: {
-                id: @address.id,
-                type: "customer_address",
-                attributes: {
-                  name: @address.name,
-                    latitude: @address.latitude&.to_f,
-                    longitude: @address.longitude&.to_f,
-                  country: @address.country,
-                  region: @address.region,
-                  city: @address.city,
-                  county: @address.county,
-                  address: @address.address,
-                  is_default: @address.is_default,
-                  created_at: @address.created_at.iso8601,
-                  updated_at: @address.updated_at.iso8601
-                }
-              }
-            }, status: :ok
+            render json: { data: address_json(@address.reload) }, status: :ok
           end
 
           private
@@ -176,7 +86,40 @@ module Api
           end
 
           def address_params
-            params.require(:address).permit(:name, :latitude, :longitude, :country, :region, :city, :county, :is_default, address: {})
+            params.require(:address).permit(
+              :name,
+              :latitude,
+              :longitude,
+              :country,
+              :region,
+              :city,
+              :town,
+              :county,
+              :is_default,
+              address: {}
+            )
+          end
+
+          def address_json(address)
+            {
+              id: address.id,
+              type: "customer_address",
+              attributes: {
+                name: address.name,
+                latitude: address.latitude&.to_f,
+                longitude: address.longitude&.to_f,
+                country: address.country,
+                region: address.region,
+                city: address.city,
+                town: address.respond_to?(:town) ? address.town : nil,
+                county: address.county,
+                address: address.address,
+                delivery_zone_id: address.respond_to?(:delivery_zone_id) ? address.delivery_zone_id : nil,
+                is_default: address.is_default,
+                created_at: address.created_at.iso8601,
+                updated_at: address.updated_at.iso8601
+              }
+            }
           end
         end
       end

@@ -127,10 +127,16 @@ module Api
             order_params_data = order_params_raw.permit(
               :customer_address_id,
               :affiliate_visitor_id,
+              :terms_accepted,
               phones: [],
               order_items: [ :variant_stock_id, :quantity ],
               fulfillments: [ :warehouse_id, order_items: [ :variant_stock_id, :quantity ] ]
             )
+
+            unless ActiveModel::Type::Boolean.new.cast(order_params_data[:terms_accepted])
+              render json: { error: "Terms and conditions must be accepted before placing an order" }, status: :unprocessable_entity
+              return
+            end
 
             customer_address = current_user.customer_addresses.find_by(id: order_params_data[:customer_address_id])
             unless customer_address
@@ -169,7 +175,11 @@ module Api
               order_items_params,
               fulfillments_params,
               address_data,
-              (order_params_data[:phones] || [])
+              (order_params_data[:phones] || []),
+              {
+                accepted_at: Time.current,
+                version: "2026-09-30"
+              }
             ).create
             AffiliateCommissionService.claim_visitor_attributions!(order, order_params_data[:affiliate_visitor_id])
 
@@ -216,6 +226,8 @@ module Api
                 total_price: order.total_price.to_f,
                 created_at: order.created_at.iso8601,
                 updated_at: order.updated_at.iso8601,
+                terms_accepted_at: order.terms_accepted_at&.iso8601,
+                terms_version: order.terms_version,
                 creator_id: order.user_id,
                 assigned_to: order.assigned_to && {
                   id: order.assigned_to.id,
@@ -252,6 +264,7 @@ module Api
                     country: addr_record&.country,
                     region: addr_record&.region,
                     city: addr_record&.city,
+                    town: addr_record&.respond_to?(:town) ? addr_record&.town : nil,
                     county: addr_record&.county,
                     address: addr_record&.address || {}
                   }
