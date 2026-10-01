@@ -19,7 +19,9 @@ class DeliveryFeeCalculator
     address = order.customer_address
     zone = DeliveryZone.resolve(
       region: address&.region,
-      city: address&.city
+      city: address&.city,
+      town: address&.town,
+      market_name: address&.market_name
     )
     return zone if zone
 

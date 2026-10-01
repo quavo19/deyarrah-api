@@ -5,12 +5,13 @@ class OrderService
   class AvailabilityConflictError < StandardError; end
   class DowntimeConflictError < StandardError; end
   class RedisUnavailableError < StandardError; end
-  def initialize(user, order_items_params, fulfillments_params = [], address_data = nil, phones = [])
+  def initialize(user, order_items_params, fulfillments_params = [], address_data = nil, phones = [], terms_metadata = {})
     @user = user
     @order_items_params = order_items_params
     @fulfillments_params = fulfillments_params
     @address_data = address_data
     @phones = phones
+    @terms_metadata = terms_metadata || {}
     @redis_reservations = []
     @locks = []
   end
@@ -37,6 +38,11 @@ class OrderService
           user: @user,
           status: :pending
         )
+
+        if @terms_metadata[:accepted_at].present?
+          order.terms_accepted_at = @terms_metadata[:accepted_at]
+          order.terms_version = @terms_metadata[:version]
+        end
 
         # Store address data directly on order if provided
         if @address_data.present?
