@@ -29,6 +29,7 @@ Rails.application.routes.draw do
       # Admin routes
       resources :roles, only: [ :index, :update ]
       resources :permissions, only: [ :index ]
+      post "uploads", to: "uploads#create"
       post "uploads/presign", to: "uploads#presign"
       post "uploads/confirm", to: "uploads#confirm"
       delete "uploads", to: "uploads#destroy"
@@ -129,6 +130,7 @@ Rails.application.routes.draw do
 
       # Customer routes
       namespace :customer do
+        resources :delivery_zones, only: [ :index ], controller: "delivery_zones"
         resources :products, only: [ :index, :show ], controller: "products/products" do
           resources :reviews, only: [ :index, :create ], controller: "products/reviews"
         end

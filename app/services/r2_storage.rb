@@ -29,6 +29,15 @@ class R2Storage
       )
     end
 
+    def put_object(key, body:, content_type:)
+      R2_CLIENT.put_object(
+        bucket: ENV.fetch("R2_BUCKET_NAME"),
+        key: key,
+        body: body,
+        content_type: content_type
+      )
+    end
+
     def public_url(key)
       "#{ENV.fetch('R2_PUBLIC_BASE_URL').to_s.chomp('/')}/#{key}"
     end
