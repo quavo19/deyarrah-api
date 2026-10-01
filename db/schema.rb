@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_22_103000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_01_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -233,10 +233,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_22_103000) do
     t.boolean "is_default", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "town"
+    t.string "market_name"
+    t.uuid "delivery_zone_id"
     t.index ["address"], name: "index_customer_addresses_on_address", using: :gin
+    t.index ["delivery_zone_id"], name: "index_customer_addresses_on_delivery_zone_id"
     t.index ["is_default"], name: "index_customer_addresses_on_is_default"
     t.index ["latitude", "longitude"], name: "index_customer_addresses_on_latitude_and_longitude"
+    t.index ["market_name"], name: "index_customer_addresses_on_market_name"
     t.index ["name"], name: "index_customer_addresses_on_name"
+    t.index ["town"], name: "index_customer_addresses_on_town"
     t.index ["user_id"], name: "index_customer_addresses_on_user_id"
   end
 
@@ -283,10 +289,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_22_103000) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "town"
+    t.string "market_name"
+    t.boolean "region_open", default: false, null: false
+    t.boolean "city_open", default: false, null: false
+    t.boolean "town_open", default: false, null: false
     t.index ["city"], name: "index_delivery_zones_on_city"
     t.index ["code"], name: "index_delivery_zones_on_code", unique: true
+    t.index ["market_name"], name: "index_delivery_zones_on_market_name"
     t.index ["pricing_zone"], name: "index_delivery_zones_on_pricing_zone"
+    t.index ["region", "city", "town", "market_name"], name: "index_delivery_zones_on_location_hierarchy"
     t.index ["region"], name: "index_delivery_zones_on_region"
+    t.index ["town"], name: "index_delivery_zones_on_town"
     t.check_constraint "pricing_zone::text = ANY (ARRAY['near'::character varying, 'far'::character varying]::text[])", name: "delivery_zones_pricing_zone_valid"
   end
 
@@ -387,11 +401,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_22_103000) do
     t.string "order_id", limit: 7, null: false
     t.datetime "bonus_points_awarded_at"
     t.datetime "received_bonus_awarded_at"
+    t.datetime "terms_accepted_at"
+    t.string "terms_version"
     t.index ["assigned_to_id"], name: "index_orders_on_assigned_to_id"
     t.index ["customer_address_id"], name: "index_orders_on_customer_address_id"
     t.index ["order_id"], name: "index_orders_on_order_id", unique: true
     t.index ["payment_status"], name: "index_orders_on_payment_status"
     t.index ["status"], name: "index_orders_on_status"
+    t.index ["terms_accepted_at"], name: "index_orders_on_terms_accepted_at"
     t.index ["user_id"], name: "index_orders_on_user_id"
   end
 
@@ -678,6 +695,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_22_103000) do
   add_foreign_key "cart_items", "products"
   add_foreign_key "cart_items", "users"
   add_foreign_key "cart_items", "variant_stocks"
+  add_foreign_key "customer_addresses", "delivery_zones"
   add_foreign_key "customer_addresses", "users"
   add_foreign_key "downtimes", "variant_stocks"
   add_foreign_key "fulfillment_items", "fulfillments"
