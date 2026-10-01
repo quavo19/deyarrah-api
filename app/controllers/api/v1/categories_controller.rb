@@ -30,20 +30,7 @@ module Api
 
         if @category.save
           authorize @category
-          render json: {
-            data: {
-              id: @category.id,
-              type: "category",
-              attributes: {
-                name: @category.name,
-                description: @category.description,
-                created_at: @category.created_at.iso8601,
-                updated_at: @category.updated_at.iso8601,
-                image_url: @category.image_url,
-                image_storage_key: @category.image_storage_key
-              }
-            }
-          }, status: :created
+          render json: { data: category_json(@category.reload) }, status: :created
         else
           render json: {
             error: "Validation failed",

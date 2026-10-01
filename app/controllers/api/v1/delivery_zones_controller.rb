@@ -44,7 +44,20 @@ module Api
       end
 
       def zone_params
-        params.require(:delivery_zone).permit(:name, :code, :pricing_zone, :region, :city, :station_name, :active)
+        params.require(:delivery_zone).permit(
+          :name,
+          :code,
+          :pricing_zone,
+          :region,
+          :city,
+          :town,
+          :market_name,
+          :station_name,
+          :region_open,
+          :city_open,
+          :town_open,
+          :active
+        )
       end
 
       def zone_json(zone)
