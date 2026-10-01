@@ -3,6 +3,38 @@ module Api
     class UploadsController < BaseController
       before_action :authenticate_user!
 
+      def create
+        unless R2Storage.configured?
+          render json: { error: "R2 not configured" }, status: :service_unavailable
+          return
+        end
+
+        file = params[:file]
+
+        unless file.respond_to?(:original_filename) && file.respond_to?(:tempfile)
+          render json: { error: "file is required" }, status: :unprocessable_entity
+          return
+        end
+
+        content_type = file.content_type.presence || "application/octet-stream"
+        key = R2Storage.build_key(file.original_filename)
+
+        file.tempfile.rewind
+        R2Storage.put_object(key, body: file.tempfile, content_type: content_type)
+
+        render json: {
+          file: {
+            key: key,
+            url: R2Storage.public_url(key),
+            filename: file.original_filename,
+            content_type: content_type
+          }
+        }, status: :created
+      rescue Aws::S3::Errors::ServiceError => e
+        Rails.logger.warn "R2 upload failed: #{e.message}"
+        render json: { error: "Image upload failed" }, status: :bad_gateway
+      end
+
       def presign
         unless R2Storage.configured?
           render json: { error: "R2 not configured" }, status: :service_unavailable
